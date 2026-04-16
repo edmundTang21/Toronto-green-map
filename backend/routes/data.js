@@ -4,7 +4,13 @@ const express = require('express');
 const path = require('path');
 const fs = require('fs/promises');
 const cache = require('../middleware/cache');
-const { getLayer } = require('../db/queries');
+const { getLayer, getFsiClass, getFsiIndex } = require('../db/queries');
+
+// Raster layers use dedicated query functions instead of the generic getLayer()
+const RASTER_QUERY_MAP = {
+  'fsi-class': getFsiClass,
+  'fsi-index': getFsiIndex,
+};
 
 const router = express.Router();
 
@@ -27,6 +33,8 @@ const LAYER_MAP = {
   greenspaces:  { dbLayer: 'green_spaces',        fallback: 'green/green_spaces.geojson' },
   landcover:    { dbLayer: 'land_cover',          fallback: 'land_cover.geojson' },
   sewer:        { dbLayer: 'sewer_inlets',        fallback: 'sewer/sewer_inlets.geojson' },
+  'fsi-class':  { dbLayer: 'fsi_class',           fallback: null },
+  'fsi-index':  { dbLayer: 'fsi_index',           fallback: null },
 };
 
 /**
@@ -59,6 +67,19 @@ router.get('/:layer', async (req, res, next) => {
   if (cache.has(cacheKey)) {
     res.set('Cache-Control', 'public, max-age=3600');
     return res.json(cache.get(cacheKey));
+  }
+
+  // Raster layers: use dedicated query function, no file fallback
+  if (Object.prototype.hasOwnProperty.call(RASTER_QUERY_MAP, layer)) {
+    try {
+      const data = await RASTER_QUERY_MAP[layer]();
+      cache.set(cacheKey, data);
+      res.set('Cache-Control', 'public, max-age=3600');
+      return res.json(data);
+    } catch (dbErr) {
+      console.error(`FSI raster query failed for layer "${layer}":`, dbErr.message);
+      return res.status(503).json({ error: `FSI data unavailable: ${dbErr.message}` });
+    }
   }
 
   // Try PostGIS first

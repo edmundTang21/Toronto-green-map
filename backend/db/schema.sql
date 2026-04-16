@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS green_map.parking_lots (
   id               SERIAL PRIMARY KEY,
   estimated_spaces INT,
   area_m2          FLOAT,
-  geom             GEOMETRY(POLYGON, 4326)
+  geom             GEOMETRY(GEOMETRY, 4326)
 );
 
 -- ---------------------------------------------------------------------------
@@ -43,7 +43,7 @@ CREATE TABLE IF NOT EXISTS green_map.population (
   area_name   TEXT,
   population  INT,
   pop_density FLOAT,
-  geom        GEOMETRY(MULTIPOLYGON, 4326)
+  geom        GEOMETRY(GEOMETRY, 4326)
 );
 
 -- ---------------------------------------------------------------------------
@@ -64,7 +64,7 @@ CREATE TABLE IF NOT EXISTS green_map.rain_gauges (
 CREATE TABLE IF NOT EXISTS green_map.impermeable_surface (
   id   SERIAL PRIMARY KEY,
   type TEXT CHECK (type IN ('impermeable', 'permeable')),
-  geom GEOMETRY(MULTIPOLYGON, 4326)
+  geom GEOMETRY(GEOMETRY, 4326)
 );
 
 -- ---------------------------------------------------------------------------
@@ -73,7 +73,7 @@ CREATE TABLE IF NOT EXISTS green_map.impermeable_surface (
 CREATE TABLE IF NOT EXISTS green_map.contours (
   id        SERIAL PRIMARY KEY,
   elevation FLOAT,
-  geom      GEOMETRY(LINESTRING, 4326)
+  geom      GEOMETRY(GEOMETRY, 4326)
 );
 
 -- ---------------------------------------------------------------------------
@@ -88,7 +88,7 @@ CREATE TABLE IF NOT EXISTS green_map.flood_reports (
   y2015        INT,
   y2016        INT,
   y2017        INT,
-  geom         GEOMETRY(MULTIPOLYGON, 4326)
+  geom         GEOMETRY(GEOMETRY, 4326)
 );
 
 -- ---------------------------------------------------------------------------
@@ -100,7 +100,7 @@ CREATE TABLE IF NOT EXISTS green_map.green_streets (
   project_type        TEXT,
   infrastructure_type TEXT,
   description         TEXT,
-  geom                GEOMETRY(POINT, 4326)
+  geom                GEOMETRY(GEOMETRY, 4326)
 );
 
 -- ---------------------------------------------------------------------------
@@ -110,7 +110,7 @@ CREATE TABLE IF NOT EXISTS green_map.green_spaces (
   id         SERIAL PRIMARY KEY,
   area_name  TEXT,
   area_class TEXT,
-  geom       GEOMETRY(MULTIPOLYGON, 4326)
+  geom       GEOMETRY(GEOMETRY, 4326)
 );
 
 -- ---------------------------------------------------------------------------
@@ -119,7 +119,7 @@ CREATE TABLE IF NOT EXISTS green_map.green_spaces (
 CREATE TABLE IF NOT EXISTS green_map.land_cover (
   id          SERIAL PRIMARY KEY,
   description TEXT,
-  geom        GEOMETRY(MULTIPOLYGON, 4326)
+  geom        GEOMETRY(GEOMETRY, 4326)
 );
 
 -- ---------------------------------------------------------------------------
@@ -129,7 +129,7 @@ CREATE TABLE IF NOT EXISTS green_map.sewer_inlets (
   id           SERIAL PRIMARY KEY,
   asset_id     TEXT,
   install_date DATE,
-  geom         GEOMETRY(POINT, 4326)
+  geom         GEOMETRY(GEOMETRY, 4326)
 );
 
 -- ---------------------------------------------------------------------------
@@ -185,3 +185,22 @@ CREATE INDEX IF NOT EXISTS idx_sewer_inlets_geom
 
 CREATE INDEX IF NOT EXISTS idx_trees_geom
   ON green_map.trees USING GIST(geom);
+
+-- ---------------------------------------------------------------------------
+-- FSI raster tables — created and populated by raster2pgsql, not by hand.
+-- The tables below are documentation only; raster2pgsql creates them with
+-- the correct raster column type. Run the import commands in db/import.js
+-- or the README to populate these tables.
+-- ---------------------------------------------------------------------------
+-- green_map.fsi_class  (FS-national-2015-class.tif  — categorical, SRID auto)
+-- green_map.fsi_index  (FS-national-2015-index.tif  — continuous,  SRID auto)
+--
+-- Import commands (run from project root with SSH tunnel on port 5433):
+--
+--   raster2pgsql -s 4326 -I -C -M -t 100x100 \
+--     data/FS-national-2015-class.tif green_map.fsi_class \
+--     | PGPASSWORD='...' psql -h localhost -p 5433 -U postgres -d postgres
+--
+--   raster2pgsql -s 4326 -I -C -M -t 100x100 \
+--     data/FS-national-2015-index.tif green_map.fsi_index \
+--     | PGPASSWORD='...' psql -h localhost -p 5433 -U postgres -d postgres
