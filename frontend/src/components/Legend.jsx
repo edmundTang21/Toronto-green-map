@@ -1,6 +1,18 @@
 import React, { useState } from 'react';
 
-export default function Legend({ fsiVisible = false, fsiMin = 0, fsiMax = 100, fsiColorLow = '#ffffff', fsiColorHigh = '#0ea5e9' }) {
+function computeGradient(stops) {
+  const sorted = [...stops].sort((a, b) => a.value - b.value);
+  const min = sorted[0].value;
+  const max = sorted[sorted.length - 1].value;
+  const range = max - min || 1;
+  const parts = sorted.map(s => `${s.color} ${((s.value - min) / range * 100).toFixed(1)}%`);
+  return `linear-gradient(to right, ${parts.join(', ')})`;
+}
+
+export default function Legend({
+  fsiVisible = false,
+  fsiColorStops = [{ value: 0, color: '#ffffff' }, { value: 100, color: '#0ea5e9' }],
+}) {
   const [collapsed, setCollapsed] = useState(false);
 
   return (
@@ -87,21 +99,19 @@ export default function Legend({ fsiVisible = false, fsiMin = 0, fsiMax = 100, f
         {fsiVisible && (
           <>
             <h3>FSI</h3>
-            <div className="legend-item" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 4 }}>
+            <div className="legend-fsi">
               <div
-                className="legend-color"
                 style={{
-                  width: '100%',
-                  height: 12,
-                  background: `linear-gradient(to right, ${fsiColorLow}, ${fsiColorHigh})`,
-                  borderRadius: 3,
+                  background: computeGradient(fsiColorStops),
+                  height: 10,
+                  borderRadius: 4,
                   border: '1px solid rgba(0,0,0,0.1)',
                 }}
               />
-              <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', fontSize: 10, color: '#64748b' }}>
-                <span>{fsiMin}</span>
+              <div className="legend-fsi-labels">
+                <span>{fsiColorStops[0]?.value}</span>
                 <span>FSI index</span>
-                <span>{fsiMax}</span>
+                <span>{fsiColorStops[fsiColorStops.length - 1]?.value}</span>
               </div>
             </div>
           </>
