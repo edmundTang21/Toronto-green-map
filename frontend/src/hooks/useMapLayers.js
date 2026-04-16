@@ -294,10 +294,10 @@ function setupPopups(map, treeState) {
   map.on('mouseenter', 'parking-fill', (e) => {
     const p = e.features[0].properties;
     popup.setLngLat(e.lngLat)
-      .setHTML(`<b>Lot #${p._id || '-'}</b><br>~${p.estimated_spaces || 0} spaces<br>${Math.round(p.area_m2 || 0).toLocaleString()} m&sup2;`)
+      .setHTML(`<b>Lot #${p.id || '-'}</b><br>~${p.estimated_spaces || 0} spaces<br>${Math.round(p.area_m2 || 0).toLocaleString()} m&sup2;`)
       .addTo(map);
     map.setPaintProperty('parking-fill', 'fill-opacity', ['case',
-      ['==', ['get', '_id'], p._id], 0.7, 0.4]);
+      ['==', ['get', 'id'], p.id], 0.7, 0.4]);
   });
   map.on('mouseleave', 'parking-fill', () => {
     popup.remove();
@@ -318,7 +318,7 @@ function setupPopups(map, treeState) {
   map.on('mouseenter', 'population-fill', (e) => {
     const p = e.features[0].properties;
     popup.setLngLat(e.lngLat).setHTML(
-      `<b>${p.AREA_NAME}</b><br>Pop: ${p.population.toLocaleString()}<br>Density: ${p.pop_density.toLocaleString()}/km&sup2;`
+      `<b>${p.area_name || '-'}</b><br>Pop: ${(p.population || 0).toLocaleString()}<br>Density: ${(p.pop_density || 0).toLocaleString()}/km&sup2;`
     ).addTo(map);
   });
   map.on('mouseleave', 'population-fill', () => popup.remove());
@@ -327,13 +327,13 @@ function setupPopups(map, treeState) {
   map.on('click', 'rain-circles', (e) => {
     const p = e.features[0].properties;
     new window.__mapboxgl.Popup().setLngLat(e.lngLat).setHTML(
-      `<b>${p.NAME}</b><br>${p.LOCATION}<br>Volume: ${p.Volume} mm<br>Return: ${p.Return}`
+      `<b>${p.name || '-'}</b><br>${p.location || ''}<br>Volume: ${p.volume || '-'} mm<br>Return: ${p.return_period || '-'}`
     ).addTo(map);
   });
 
   // Contour hover
   map.on('mouseenter', 'contours-line', (e) => {
-    popup.setLngLat(e.lngLat).setHTML(`${e.features[0].properties.CONTOUR}m`).addTo(map);
+    popup.setLngLat(e.lngLat).setHTML(`${e.features[0].properties.elevation || '-'}m`).addTo(map);
   });
   map.on('mouseleave', 'contours-line', () => popup.remove());
 
@@ -341,7 +341,9 @@ function setupPopups(map, treeState) {
   map.on('mouseenter', 'flood-fill', (e) => {
     const p = e.features[0].properties;
     popup.setLngLat(e.lngLat).setHTML(
-      `<b>${p.AREA_NAME}</b><br>Total: ${p.total_floods}<br>2013: ${p['2013']} | 2014: ${p['2014']}<br>2015: ${p['2015']} | 2016: ${p['2016']} | 2017: ${p['2017']}`
+      `<b>${p.area_name || '-'}</b><br>Total: ${p.total_floods || 0}<br>` +
+      `2013: ${p.y2013 || 0} | 2014: ${p.y2014 || 0}<br>` +
+      `2015: ${p.y2015 || 0} | 2016: ${p.y2016 || 0} | 2017: ${p.y2017 || 0}`
     ).addTo(map);
   });
   map.on('mouseleave', 'flood-fill', () => popup.remove());
@@ -350,15 +352,15 @@ function setupPopups(map, treeState) {
   map.on('click', 'greenstreets-circles', (e) => {
     const p = e.features[0].properties;
     new window.__mapboxgl.Popup().setLngLat(e.lngLat).setHTML(
-      `<b>${p['Common Name']}</b><br>Type: ${p['Project Type']}<br>
-       Infrastructure: ${p['Green Infrastructure Type']}<br>${p['Description'] || ''}`
+      `<b>${p.common_name || '-'}</b><br>Type: ${p.project_type || '-'}<br>
+       Infrastructure: ${p.infrastructure_type || '-'}<br>${p.description || ''}`
     ).addTo(map);
   });
 
   // Green spaces hover
   map.on('mouseenter', 'greenspaces-fill', (e) => {
     const p = e.features[0].properties;
-    popup.setLngLat(e.lngLat).setHTML(`<b>${p.AREA_NAME}</b><br>${p.AREA_CLASS}`).addTo(map);
+    popup.setLngLat(e.lngLat).setHTML(`<b>${p.area_name || '-'}</b><br>${p.area_class || '-'}`).addTo(map);
   });
   map.on('mouseleave', 'greenspaces-fill', () => popup.remove());
 
@@ -374,16 +376,16 @@ function setupPopups(map, treeState) {
 
   // Land cover hover
   map.on('mouseenter', 'landcover-fill', (e) => {
-    popup.setLngLat(e.lngLat).setHTML(`<b>${e.features[0].properties.Desc || 'Unknown'}</b>`).addTo(map);
+    popup.setLngLat(e.lngLat).setHTML(`<b>${e.features[0].properties.description || 'Unknown'}</b>`).addTo(map);
   });
   map.on('mouseleave', 'landcover-fill', () => popup.remove());
 
   // Sewer inlets hover
   map.on('mouseenter', 'sewer-circles', (e) => {
     const p = e.features[0].properties;
-    const year = p['Sewer Inlet Install Date'] ? p['Sewer Inlet Install Date'].slice(0, 4) : 'Unknown';
+    const year = p.install_date ? p.install_date.slice(0, 4) : 'Unknown';
     popup.setLngLat(e.lngLat).setHTML(
-      `<b>Sewer Inlet</b><br>ID: ${p['Asset Identification']}<br>Installed: ${year}`
+      `<b>Sewer Inlet</b><br>ID: ${p.asset_id || '-'}<br>Installed: ${year}`
     ).addTo(map);
   });
   map.on('mouseleave', 'sewer-circles', () => popup.remove());
