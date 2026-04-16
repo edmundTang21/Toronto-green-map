@@ -1,13 +1,6 @@
 import React, { useState } from 'react';
 
-const FSI_GRADIENTS = {
-  blue:        'linear-gradient(to right, #ffffff, #0ea5e9)',
-  red:         'linear-gradient(to right, #ffffff, #ef4444)',
-  'yellow-red':'linear-gradient(to right, #fef08a, #dc2626)',
-  'green-red': 'linear-gradient(to right, #22c55e, #ef4444)',
-};
-
-export default function Legend({ fsiVisible = false, fsiMin = 0, fsiMax = 100, fsiColorScheme = 'blue' }) {
+export default function Legend({ fsiVisible = false, fsiMin = 0, fsiMax = 100, fsiColorLow = '#ffffff', fsiColorHigh = '#0ea5e9' }) {
   const [collapsed, setCollapsed] = useState(false);
 
   return (
@@ -100,7 +93,7 @@ export default function Legend({ fsiVisible = false, fsiMin = 0, fsiMax = 100, f
                 style={{
                   width: '100%',
                   height: 12,
-                  background: FSI_GRADIENTS[fsiColorScheme] || FSI_GRADIENTS['blue'],
+                  background: `linear-gradient(to right, ${fsiColorLow}, ${fsiColorHigh})`,
                   borderRadius: 3,
                   border: '1px solid rgba(0,0,0,0.1)',
                 }}

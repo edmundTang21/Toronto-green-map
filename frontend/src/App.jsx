@@ -6,7 +6,7 @@ import LayerControl from './components/LayerControl.jsx';
 import Legend from './components/Legend.jsx';
 import InfoPanel from './components/InfoPanel.jsx';
 import WalkPanel from './components/WalkPanel.jsx';
-import { setFsiOpacity, setFsiRange, setFsiColorScheme } from './hooks/useMapLayers.js';
+import { setFsiOpacity, setFsiRange, setFsiColors } from './hooks/useMapLayers.js';
 
 export default function App() {
   const mapRef = useRef(null);
@@ -34,7 +34,8 @@ export default function App() {
   const [fsiMin, setFsiMin] = useState(0);
   const [fsiMax, setFsiMax] = useState(100);
   const [fsiOpacity, setFsiOpacityState] = useState(0.7);
-  const [fsiColorScheme, setFsiColorSchemeState] = useState('blue');
+  const [fsiColorLow, setFsiColorLow] = useState('#ffffff');
+  const [fsiColorHigh, setFsiColorHigh] = useState('#0ea5e9');
 
   // Basemap style
   const [currentStyle, setCurrentStyle] = useState('street');
@@ -65,10 +66,15 @@ export default function App() {
     if (mapRef.current) setFsiOpacity(mapRef.current, value);
   }, [mapRef]);
 
-  const handleFsiColorSchemeChange = useCallback((scheme) => {
-    setFsiColorSchemeState(scheme);
-    if (mapRef.current) setFsiColorScheme(mapRef.current, scheme);
-  }, [mapRef]);
+  const handleFsiColorLowChange = useCallback((hex) => {
+    setFsiColorLow(hex);
+    if (mapRef.current) setFsiColors(mapRef.current, hex, fsiColorHigh);
+  }, [mapRef, fsiColorHigh]);
+
+  const handleFsiColorHighChange = useCallback((hex) => {
+    setFsiColorHigh(hex);
+    if (mapRef.current) setFsiColors(mapRef.current, fsiColorLow, hex);
+  }, [mapRef, fsiColorLow]);
 
   return (
     <>
@@ -102,8 +108,10 @@ export default function App() {
           onFsiRangeChange={handleFsiRangeChange}
           fsiOpacity={fsiOpacity}
           onFsiOpacityChange={handleFsiOpacityChange}
-          fsiColorScheme={fsiColorScheme}
-          onFsiColorSchemeChange={handleFsiColorSchemeChange}
+          fsiColorLow={fsiColorLow}
+          onFsiColorLowChange={handleFsiColorLowChange}
+          fsiColorHigh={fsiColorHigh}
+          onFsiColorHighChange={handleFsiColorHighChange}
         />
 
         <WalkPanel mapRef={mapRef} />
@@ -112,7 +120,8 @@ export default function App() {
           fsiVisible={layers.fsi}
           fsiMin={fsiMin}
           fsiMax={fsiMax}
-          fsiColorScheme={fsiColorScheme}
+          fsiColorLow={fsiColorLow}
+          fsiColorHigh={fsiColorHigh}
         />
       </div>
       <Footer />

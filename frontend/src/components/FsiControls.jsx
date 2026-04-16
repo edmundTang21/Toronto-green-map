@@ -1,28 +1,5 @@
 import React from 'react';
 
-const COLOR_SCHEMES = [
-  {
-    id: 'blue',
-    label: 'Blue',
-    gradient: 'linear-gradient(to right, #ffffff, #0ea5e9)',
-  },
-  {
-    id: 'red',
-    label: 'Red',
-    gradient: 'linear-gradient(to right, #ffffff, #ef4444)',
-  },
-  {
-    id: 'yellow-red',
-    label: 'Yellow–Red',
-    gradient: 'linear-gradient(to right, #fef08a, #dc2626)',
-  },
-  {
-    id: 'green-red',
-    label: 'Green–Red',
-    gradient: 'linear-gradient(to right, #22c55e, #ef4444)',
-  },
-];
-
 export default function FsiControls({
   visible,
   min,
@@ -30,8 +7,10 @@ export default function FsiControls({
   onRangeChange,
   opacity,
   onOpacityChange,
-  colorScheme,
-  onColorSchemeChange,
+  colorLow = '#ffffff',
+  onColorLowChange,
+  colorHigh = '#0ea5e9',
+  onColorHighChange,
 }) {
   if (!visible) return null;
 
@@ -88,20 +67,26 @@ export default function FsiControls({
         </div>
       </div>
 
-      {/* Color scheme */}
+      {/* Color pickers */}
       <div className="fsi-row fsi-color-row">
         <span className="fsi-label">Color</span>
-        <div className="fsi-swatches">
-          {COLOR_SCHEMES.map((s) => (
-            <button
-              key={s.id}
-              title={s.label}
-              className={`fsi-swatch${colorScheme === s.id ? ' active' : ''}`}
-              style={{ background: s.gradient }}
-              onClick={() => onColorSchemeChange(s.id)}
-              aria-label={s.label}
-            />
-          ))}
+        <div className="fsi-color-pickers">
+          <input
+            type="color"
+            value={colorLow}
+            onChange={(e) => onColorLowChange(e.target.value)}
+            title="Low value color"
+          />
+          <div
+            className="fsi-gradient-preview"
+            style={{ background: `linear-gradient(to right, ${colorLow}, ${colorHigh})` }}
+          />
+          <input
+            type="color"
+            value={colorHigh}
+            onChange={(e) => onColorHighChange(e.target.value)}
+            title="High value color"
+          />
         </div>
       </div>
     </div>

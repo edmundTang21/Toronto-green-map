@@ -6,13 +6,6 @@
 const API_URL = import.meta.env.VITE_API_URL || '';
 const V = '20260413';
 
-// Fill-color interpolate expressions for FSI color schemes (uses 'val' property from GeoJSON)
-const FSI_COLOR_EXPRESSIONS = {
-  blue:         ['interpolate', ['linear'], ['get', 'val'], 0, '#ffffff', 100, '#0ea5e9'],
-  red:          ['interpolate', ['linear'], ['get', 'val'], 0, '#ffffff', 100, '#ef4444'],
-  'yellow-red': ['interpolate', ['linear'], ['get', 'val'], 0, '#fef08a', 100, '#dc2626'],
-  'green-red':  ['interpolate', ['linear'], ['get', 'val'], 0, '#22c55e', 100, '#ef4444'],
-};
 
 // Tree tile grid size in degrees
 const TREE_TILE_SIZE = 0.01;
@@ -63,7 +56,11 @@ export function setupMapLayers(map, { setParkingStats, setViewportTreeCount }, t
     layout: { visibility: 'none' },
     paint: {
       'fill-opacity': 0.7,
-      'fill-color': FSI_COLOR_EXPRESSIONS['blue'],
+      'fill-color': [
+        'interpolate', ['linear'], ['get', 'val'],
+        0, '#ffffff',
+        100, '#0ea5e9',
+      ],
     },
   });
   if (map.getLayer('fsi-layer')) {
@@ -536,11 +533,13 @@ export function setFsiRange(map, min, max) {
 }
 
 /**
- * Set FSI color scheme — one of: 'blue', 'red', 'yellow-red', 'green-red'.
+ * Set FSI fill color via custom low/high hex values.
  */
-export function setFsiColorScheme(map, scheme) {
-  if (map && map.getLayer('fsi-layer')) {
-    const expr = FSI_COLOR_EXPRESSIONS[scheme] || FSI_COLOR_EXPRESSIONS['blue'];
-    map.setPaintProperty('fsi-layer', 'fill-color', expr);
-  }
+export function setFsiColors(map, colorLow, colorHigh) {
+  if (!map.getLayer('fsi-layer')) return;
+  map.setPaintProperty('fsi-layer', 'fill-color', [
+    'interpolate', ['linear'], ['get', 'val'],
+    0, colorLow,
+    100, colorHigh,
+  ]);
 }
