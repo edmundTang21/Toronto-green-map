@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import mapboxgl from 'mapbox-gl';
-import { setupMapLayers, applyLayerVisibility, setFsiColorStops, setFsiRange, setFsiOpacity, setBoundaryWidth, setContourColor, CONTOUR_COLOR_DEFAULT } from '../hooks/useMapLayers.js';
+import { setupMapLayers, applyLayerVisibility, setFsiColorStops, setFsiRange, setFsiOpacity, setBoundaryWidth, setContourColor, CONTOUR_COLOR_DEFAULT, setContourWidth, CONTOUR_WIDTH_DEFAULT } from '../hooks/useMapLayers.js';
 
 const MAPBOX_TOKEN =
   import.meta.env.VITE_MAPBOX_TOKEN ||
@@ -33,6 +33,7 @@ export default function Map({
   fsiOpacity,
   boundaryWidth,
   contourColor,
+  contourWidth,
 }) {
   const containerRef = useRef(null);
   const styleRef = useRef(currentStyle);
@@ -52,6 +53,9 @@ export default function Map({
 
   const contourColorRef = useRef(CONTOUR_COLOR_DEFAULT);
   useEffect(() => { contourColorRef.current = contourColor; }, [contourColor]);
+
+  const contourWidthRef = useRef(CONTOUR_WIDTH_DEFAULT);
+  useEffect(() => { contourWidthRef.current = contourWidth; }, [contourWidth]);
 
   // Shared mutable state for tree tile loading (not React state — avoids re-render loops)
   const treeStateRef = useRef({
@@ -102,6 +106,9 @@ export default function Map({
 
       // Reapply contour color after basemap switch
       setContourColor(map, contourColorRef.current);
+
+      // Reapply contour width after basemap switch
+      setContourWidth(map, contourWidthRef.current);
     });
 
     return () => map.remove();

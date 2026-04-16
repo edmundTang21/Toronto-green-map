@@ -69,6 +69,8 @@ export default function LayerControl({
   onBoundaryWidthChange,
   contourColor,
   onContourColorChange,
+  contourWidth,
+  onContourWidthChange,
 }) {
   const [collapsed, setCollapsed] = useState(false);
 
@@ -176,6 +178,19 @@ export default function LayerControl({
                             onChange={(e) => onContourColorChange(e.target.value)}
                             className="layer-sub-color"
                           />
+                        </div>
+                      )}
+                      {def.id === 'contours' && visibility['contours'] && (
+                        <div className="layer-sub-control">
+                          <span className="layer-sub-label">Width</span>
+                          <input
+                            type="range"
+                            min={0.5} max={6} step={0.5}
+                            value={contourWidth}
+                            onChange={(e) => onContourWidthChange(Number(e.target.value))}
+                            className="layer-sub-slider"
+                          />
+                          <span className="layer-sub-value">{contourWidth}px</span>
                         </div>
                       )}
                       {def.id === 'boundary' && visibility['boundary'] && (
