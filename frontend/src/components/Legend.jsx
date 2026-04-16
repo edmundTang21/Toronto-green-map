@@ -1,6 +1,13 @@
 import React, { useState } from 'react';
 
-export default function Legend() {
+const FSI_GRADIENTS = {
+  blue:        'linear-gradient(to right, #ffffff, #0ea5e9)',
+  red:         'linear-gradient(to right, #ffffff, #ef4444)',
+  'yellow-red':'linear-gradient(to right, #fef08a, #dc2626)',
+  'green-red': 'linear-gradient(to right, #22c55e, #ef4444)',
+};
+
+export default function Legend({ fsiVisible = false, fsiMin = 0, fsiMax = 100, fsiColorScheme = 'blue' }) {
   const [collapsed, setCollapsed] = useState(false);
 
   return (
@@ -83,6 +90,29 @@ export default function Legend() {
           <div className="legend-color" style={{ background: 'linear-gradient(to right,#fee5d9,#a50f15)', borderColor: '#ccc' }} />
           <span>Population Density</span>
         </div>
+
+        {fsiVisible && (
+          <>
+            <h3>Flood Susceptibility</h3>
+            <div className="legend-item" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 4 }}>
+              <div
+                className="legend-color"
+                style={{
+                  width: '100%',
+                  height: 12,
+                  background: FSI_GRADIENTS[fsiColorScheme] || FSI_GRADIENTS['blue'],
+                  borderRadius: 3,
+                  border: '1px solid rgba(0,0,0,0.1)',
+                }}
+              />
+              <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', fontSize: 10, color: '#64748b' }}>
+                <span>{fsiMin}</span>
+                <span>FSI index</span>
+                <span>{fsiMax}</span>
+              </div>
+            </div>
+          </>
+        )}
       </div>
     </>
   );

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import FsiControls from './FsiControls.jsx';
 
 const STYLE_LABELS = {
   street: 'Streets',
@@ -28,9 +29,10 @@ const LAYER_DEFS = [
   { id: 'greenspaces',  label: 'Green Spaces', swatchClass: '',       swatchStyle: { background: 'rgba(34,197,94,0.4)', borderColor: '#22c55e' }, section: 'Environment' },
   { id: 'greenstreets', label: 'Green Streets',swatchClass: 'circle', swatchStyle: { background: '#059669' },                                    section: 'Environment' },
   { id: 'landcover',    label: 'Land Cover',   swatchClass: '',       swatchStyle: { background: 'linear-gradient(135deg,#228b22,#4a90d9)' },    section: 'Environment' },
-  { id: 'sewer',        label: 'Sewer Inlets', swatchClass: 'circle', swatchStyle: { background: '#0ea5e9', borderColor: '#0369a1' },             section: 'Water & Drainage' },
-  { id: 'rain',         label: 'Rain Gauges',  swatchClass: 'circle', swatchStyle: { background: '#0ea5e9' },                                    section: 'Water & Drainage' },
-  { id: 'flood',        label: 'Flood Reports',swatchClass: '',       swatchStyle: { background: 'linear-gradient(135deg,#dbeafe,#1e3a8a)' },    section: 'Water & Drainage' },
+  { id: 'sewer',        label: 'Sewer Inlets',        swatchClass: 'circle', swatchStyle: { background: '#0ea5e9', borderColor: '#0369a1' },             section: 'Water & Drainage' },
+  { id: 'rain',         label: 'Rain Gauges',         swatchClass: 'circle', swatchStyle: { background: '#0ea5e9' },                                    section: 'Water & Drainage' },
+  { id: 'flood',        label: 'Flood Reports',       swatchClass: '',       swatchStyle: { background: 'linear-gradient(135deg,#dbeafe,#1e3a8a)' },    section: 'Water & Drainage' },
+  { id: 'fsi',          label: 'Flood Susceptibility',swatchClass: '',       swatchStyle: { background: 'linear-gradient(135deg,#ffffff,#0ea5e9)' },    section: 'Water & Drainage' },
   { id: 'contours',     label: 'Contours',     swatchClass: 'line',   swatchStyle: { background: '#b45309' },                                    section: 'Terrain' },
   { id: 'boundary',     label: 'Boundary',     swatchClass: '',       swatchStyle: { background: 'rgba(59,130,246,0.15)', borderColor: '#3b82f6' }, section: 'Other' },
   { id: 'population',   label: 'Population',   swatchClass: '',       swatchStyle: { background: 'linear-gradient(135deg,#fee5d9,#a50f15)' },    section: 'Other' },
@@ -51,7 +53,19 @@ function normaliseVisibility(layers) {
   return layers || {};
 }
 
-export default function LayerControl({ layers = [], onToggle, currentStyle, onStyleChange }) {
+export default function LayerControl({
+  layers = [],
+  onToggle,
+  currentStyle,
+  onStyleChange,
+  fsiMin,
+  fsiMax,
+  onFsiRangeChange,
+  fsiOpacity,
+  onFsiOpacityChange,
+  fsiColorScheme,
+  onFsiColorSchemeChange,
+}) {
   const [collapsed, setCollapsed] = useState(false);
 
   const visibility = normaliseVisibility(layers);
@@ -124,18 +138,32 @@ export default function LayerControl({ layers = [], onToggle, currentStyle, onSt
                 <h3>{section}</h3>
                 <div className="layer-group">
                   {defs.map(def => (
-                    <label key={def.id} aria-label={def.label}>
-                      <input
-                        type="checkbox"
-                        checked={!!visibility[def.id]}
-                        onChange={() => onToggle && onToggle(def.id)}
-                      />
-                      <div
-                        className={`layer-swatch${def.swatchClass ? ' ' + def.swatchClass : ''}`}
-                        style={def.swatchStyle}
-                      />
-                      <span>{def.label}</span>
-                    </label>
+                    <React.Fragment key={def.id}>
+                      <label aria-label={def.label}>
+                        <input
+                          type="checkbox"
+                          checked={!!visibility[def.id]}
+                          onChange={() => onToggle && onToggle(def.id)}
+                        />
+                        <div
+                          className={`layer-swatch${def.swatchClass ? ' ' + def.swatchClass : ''}`}
+                          style={def.swatchStyle}
+                        />
+                        <span>{def.label}</span>
+                      </label>
+                      {def.id === 'fsi' && (
+                        <FsiControls
+                          visible={!!visibility['fsi']}
+                          min={fsiMin}
+                          max={fsiMax}
+                          onRangeChange={onFsiRangeChange}
+                          opacity={fsiOpacity}
+                          onOpacityChange={onFsiOpacityChange}
+                          colorScheme={fsiColorScheme}
+                          onColorSchemeChange={onFsiColorSchemeChange}
+                        />
+                      )}
+                    </React.Fragment>
                   ))}
                 </div>
               </React.Fragment>
