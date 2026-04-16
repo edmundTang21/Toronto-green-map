@@ -1,0 +1,14 @@
+import React from 'react';
+
+export default function Footer() {
+  return (
+    <footer>
+      Data sources:{' '}
+      <a href="https://open.toronto.ca" target="_blank" rel="noreferrer">
+        Toronto Open Data
+      </a>{' '}
+      — Parking Lots · Green P · Population · Rain Gauges · Impermeable Surface · Contours · Flood
+      Reports · Green Streets · Green Spaces · Land Cover · Sewer Inlets · Trees
+    </footer>
+  );
+}
