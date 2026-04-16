@@ -9,16 +9,9 @@ frontend/dist/
 .env.local
 .env.*.local
 
-# Large raster files
-*.tif
-*.tiff
-permeability_wgs84.zip
-
-# Large raw source GeoJSON files (kept on server, not in git)
-data/parking/Parking Lot - 4326.geojson
-data/sewer/Sewer Inlets - 4326.geojson
-data/green/Green Spaces - 4326.geojson
-data/green/Green Streets Map - 4326.geojson
+# Data and tile files (kept on server, not in git)
+data/
+tiles/
 
 # macOS
 .DS_Store
