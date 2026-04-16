@@ -58,7 +58,7 @@ jobs:
             echo "Rebuilding frontend..."
             cd "$DEPLOY_DIR/frontend"
             npm ci
-            VITE_MAPBOX_TOKEN=${{ secrets.VITE_MAPBOX_TOKEN }} VITE_BASE_PATH=/map/ npm run build
+            VITE_MAPBOX_TOKEN=${{ secrets.VITE_MAPBOX_TOKEN }} VITE_BASE_PATH=/map/ VITE_API_URL=/map npm run build
             cd ..
 
             echo "Restarting backend with PM2..."
