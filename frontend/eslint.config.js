@@ -24,6 +24,8 @@ export default [
         fetch: 'readonly',
         URL: 'readonly',
         URLSearchParams: 'readonly',
+        Event: 'readonly',
+        CustomEvent: 'readonly',
         navigator: 'readonly',
         localStorage: 'readonly',
         sessionStorage: 'readonly',
