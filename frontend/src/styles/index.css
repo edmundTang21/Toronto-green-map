@@ -257,6 +257,29 @@ footer a:hover { text-decoration: underline; }
 
 .map-wrapper { flex: 1; position: relative; overflow: hidden; }
 
+/* Boundary width sub-control */
+.layer-sub-control {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 0 4px 18px;
+}
+.layer-sub-label {
+  font-size: 0.75rem;
+  color: #6b7280;
+  min-width: 36px;
+}
+.layer-sub-slider {
+  flex: 1;
+  min-width: 0;
+}
+.layer-sub-value {
+  font-size: 0.75rem;
+  color: #374151;
+  min-width: 28px;
+  text-align: right;
+}
+
 /* FSI Controls */
 .fsi-controls {
   margin: 4px 8px 6px 26px;
