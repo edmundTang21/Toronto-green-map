@@ -49,7 +49,7 @@ export function setupMapLayers(map, { setParkingStats, setViewportTreeCount }, t
   if (!map.getSource('fsi')) {
     map.addSource('fsi', {
       type: 'raster',
-      url: `${API_URL}/api/raster/FS-national-2015-index.tif`,
+      url: `${API_URL}/api/raster/toronto-FSI-index.tif`,
       tileSize: 256,
     });
   }
