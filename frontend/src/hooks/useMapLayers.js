@@ -552,6 +552,14 @@ export function setFsiRange(map, min, max) {
 }
 
 /**
+ * Set boundary line-width (in pixels).
+ */
+export function setBoundaryWidth(map, width) {
+  if (!map.getLayer('boundary-line')) return;
+  map.setPaintProperty('boundary-line', 'line-width', width);
+}
+
+/**
  * Set FSI fill color via multi-stop array [{ value, color }, ...].
  * Mapbox clamps at the last stop, so e.g. stop at 80=red means everything 80+ is solid red.
  */

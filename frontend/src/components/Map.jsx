@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import mapboxgl from 'mapbox-gl';
-import { setupMapLayers, applyLayerVisibility, setFsiColorStops, setFsiRange, setFsiOpacity } from '../hooks/useMapLayers.js';
+import { setupMapLayers, applyLayerVisibility, setFsiColorStops, setFsiRange, setFsiOpacity, setBoundaryWidth } from '../hooks/useMapLayers.js';
 
 const MAPBOX_TOKEN =
   import.meta.env.VITE_MAPBOX_TOKEN ||
@@ -31,6 +31,7 @@ export default function Map({
   fsiMin,
   fsiMax,
   fsiOpacity,
+  boundaryWidth,
 }) {
   const containerRef = useRef(null);
   const styleRef = useRef(currentStyle);
@@ -44,6 +45,9 @@ export default function Map({
   useEffect(() => {
     fsiStateRef.current = { colorStops: fsiColorStops, min: fsiMin, max: fsiMax, opacity: fsiOpacity };
   }, [fsiColorStops, fsiMin, fsiMax, fsiOpacity]);
+
+  const boundaryWidthRef = useRef(boundaryWidth);
+  useEffect(() => { boundaryWidthRef.current = boundaryWidth; }, [boundaryWidth]);
 
   // Shared mutable state for tree tile loading (not React state — avoids re-render loops)
   const treeStateRef = useRef({
@@ -88,6 +92,9 @@ export default function Map({
       }
       setFsiRange(map, fsi.min, fsi.max);
       setFsiOpacity(map, fsi.opacity);
+
+      // Reapply boundary width after basemap switch
+      setBoundaryWidth(map, boundaryWidthRef.current);
     });
 
     return () => map.remove();

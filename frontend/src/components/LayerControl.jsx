@@ -65,6 +65,8 @@ export default function LayerControl({
   onFsiOpacityChange,
   colorStops,
   onColorStopsChange,
+  boundaryWidth,
+  onBoundaryWidthChange,
 }) {
   const [collapsed, setCollapsed] = useState(false);
 
@@ -162,6 +164,19 @@ export default function LayerControl({
                           colorStops={colorStops}
                           onColorStopsChange={onColorStopsChange}
                         />
+                      )}
+                      {def.id === 'boundary' && visibility['boundary'] && (
+                        <div className="layer-sub-control">
+                          <span className="layer-sub-label">Width</span>
+                          <input
+                            type="range"
+                            min={0.5} max={6} step={0.5}
+                            value={boundaryWidth}
+                            onChange={(e) => onBoundaryWidthChange(Number(e.target.value))}
+                            className="layer-sub-slider"
+                          />
+                          <span className="layer-sub-value">{boundaryWidth}px</span>
+                        </div>
                       )}
                     </React.Fragment>
                   ))}

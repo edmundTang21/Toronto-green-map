@@ -7,7 +7,7 @@ import LayerControl from './components/LayerControl.jsx';
 import Legend from './components/Legend.jsx';
 import InfoPanel from './components/InfoPanel.jsx';
 import WalkPanel from './components/WalkPanel.jsx';
-import { setFsiOpacity, setFsiRange, setFsiColorStops as setFsiColorStopsMap } from './hooks/useMapLayers.js';
+import { setFsiOpacity, setFsiRange, setFsiColorStops as setFsiColorStopsMap, setBoundaryWidth } from './hooks/useMapLayers.js';
 
 const FSI_DEFAULTS = {
   colorStops: [{ value: 0, color: '#ffffff' }, { value: 100, color: '#0ea5e9' }],
@@ -58,6 +58,14 @@ export default function App() {
   const [fsiMax, setFsiMax] = useState(fsiInit.max);
   const [fsiOpacity, setFsiOpacityState] = useState(fsiInit.opacity);
   const [fsiColorStops, setFsiColorStops] = useState(fsiInit.colorStops);
+
+  // Boundary width state
+  const [boundaryWidth, setBoundaryWidthState] = useState(1.5);
+
+  const handleBoundaryWidthChange = useCallback((val) => {
+    setBoundaryWidthState(val);
+    if (mapRef.current) setBoundaryWidth(mapRef.current, val);
+  }, []);
 
   // Basemap style
   const [currentStyle, setCurrentStyle] = useState('street');
@@ -114,6 +122,7 @@ export default function App() {
           fsiMin={fsiMin}
           fsiMax={fsiMax}
           fsiOpacity={fsiOpacity}
+          boundaryWidth={boundaryWidth}
         />
 
         {/* Viewport tree count badge */}
@@ -138,6 +147,8 @@ export default function App() {
           onFsiOpacityChange={handleFsiOpacityChange}
           colorStops={fsiColorStops}
           onColorStopsChange={handleFsiColorStopsChange}
+          boundaryWidth={boundaryWidth}
+          onBoundaryWidthChange={handleBoundaryWidthChange}
         />
 
         <WalkPanel mapRef={mapRef} />
