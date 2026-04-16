@@ -6,7 +6,7 @@ const MAPBOX_TOKEN =
   import.meta.env.VITE_MAPBOX_TOKEN ||
   import.meta.env.VITE_MAPBOX_TOKEN;
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+const API_URL = import.meta.env.VITE_API_URL || '';
 
 const STYLES = {
   street:    'mapbox://styles/mapbox/streets-v12',
