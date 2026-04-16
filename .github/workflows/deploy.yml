@@ -30,6 +30,11 @@ jobs:
             export PATH="$PATH:/usr/local/bin:/usr/bin"
             # Add all nvm node version bin dirs to PATH (covers pm2 global install)
             for d in "$NVM_DIR"/versions/node/*/bin; do export PATH="$PATH:$d"; done
+            # Install pm2 globally if still not found
+            if ! command -v pm2 &>/dev/null; then
+              echo "pm2 not found, installing..."
+              npm install -g pm2
+            fi
 
             DEPLOY_DIR=/var/www/green-map
             REPO_URL=https://github.com/edmundTang21/Toronto-green-map.git
