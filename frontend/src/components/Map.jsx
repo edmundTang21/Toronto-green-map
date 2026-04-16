@@ -69,8 +69,7 @@ export default function Map({
     });
 
     return () => map.remove();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, []); // intentional empty deps: run once on mount
 
   // React to layer visibility changes
   useEffect(() => {
