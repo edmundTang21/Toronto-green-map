@@ -533,13 +533,13 @@ export function setFsiRange(map, min, max) {
 }
 
 /**
- * Set FSI fill color via custom low/high hex values.
+ * Set FSI fill color via custom low/high hex values, interpolated over [min, max].
  */
-export function setFsiColors(map, colorLow, colorHigh) {
+export function setFsiColors(map, colorLow, colorHigh, min, max) {
   if (!map.getLayer('fsi-layer')) return;
   map.setPaintProperty('fsi-layer', 'fill-color', [
     'interpolate', ['linear'], ['get', 'val'],
-    0, colorLow,
-    100, colorHigh,
+    min, colorLow,
+    max, colorHigh,
   ]);
 }
