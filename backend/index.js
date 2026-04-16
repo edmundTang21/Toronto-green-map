@@ -13,7 +13,7 @@ const tilesRouter = require('./routes/tiles');
 const { getParkingLots, getGreenP } = require('./db/queries');
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 3000;
 const CORS_ORIGIN = process.env.CORS_ORIGIN || '*';
 
 // ---------------------------------------------------------------------------
@@ -126,7 +126,22 @@ app.use('/api/data', dataRouter);
 app.use('/api/tiles', tilesRouter);
 
 // ---------------------------------------------------------------------------
-// 404 catch-all for unmatched routes
+// Serve frontend static files (production)
+// ---------------------------------------------------------------------------
+
+const FRONTEND_DIST = path.resolve(__dirname, '../frontend/dist');
+app.use(express.static(FRONTEND_DIST));
+
+// SPA fallback — serve index.html for any non-API route
+app.get('*', (req, res, next) => {
+  if (req.path.startsWith('/api') || req.path === '/health') return next();
+  res.sendFile(path.join(FRONTEND_DIST, 'index.html'), err => {
+    if (err) res.status(404).json({ error: 'Not found' });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 404 catch-all for unmatched API routes
 // ---------------------------------------------------------------------------
 
 app.use((req, res) => {
