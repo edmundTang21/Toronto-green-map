@@ -119,6 +119,23 @@ app.get('/api/green/all', (req, res, next) => {
 });
 
 // ---------------------------------------------------------------------------
+// FSI raster file endpoint (serves raw GeoTIFF for use as Mapbox raster source)
+// ---------------------------------------------------------------------------
+
+const ALLOWED_RASTERS = new Set([
+  'FS-national-2015-class.tif',
+  'FS-national-2015-index.tif',
+]);
+
+app.get('/api/raster/:filename', (req, res) => {
+  const { filename } = req.params;
+  if (!ALLOWED_RASTERS.has(filename)) {
+    return res.status(404).json({ error: 'Not found' });
+  }
+  res.sendFile(path.resolve(__dirname, '../data', filename));
+});
+
+// ---------------------------------------------------------------------------
 // Layer + tile routers
 // ---------------------------------------------------------------------------
 

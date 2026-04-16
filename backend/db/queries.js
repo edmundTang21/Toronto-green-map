@@ -210,6 +210,64 @@ async function getGreenSpaces(areaClass) {
 }
 
 /**
+ * Return FSI classification raster as vectorised GeoJSON polygons.
+ * Uses ST_DumpAsPolygons to convert the raster to vector features.
+ * Each feature has a `val` property containing the class value (1–5).
+ *
+ * @returns {Promise<object>} GeoJSON FeatureCollection
+ */
+async function getFsiClass() {
+  const sql = `
+    SELECT json_build_object(
+      'type',     'FeatureCollection',
+      'features', COALESCE(json_agg(
+        json_build_object(
+          'type',       'Feature',
+          'geometry',   ST_AsGeoJSON(geom)::json,
+          'properties', json_build_object('val', val)
+        )
+      ), '[]'::json)
+    ) AS geojson
+    FROM (
+      SELECT (ST_DumpAsPolygons(rast)).geom,
+             (ST_DumpAsPolygons(rast)).val
+      FROM green_map.fsi_class
+    ) t
+  `;
+  const result = await query(sql);
+  return result.rows[0].geojson;
+}
+
+/**
+ * Return FSI index raster as vectorised GeoJSON polygons.
+ * Uses ST_DumpAsPolygons to convert the raster to vector features.
+ * Each feature has a `val` property containing the continuous index value.
+ *
+ * @returns {Promise<object>} GeoJSON FeatureCollection
+ */
+async function getFsiIndex() {
+  const sql = `
+    SELECT json_build_object(
+      'type',     'FeatureCollection',
+      'features', COALESCE(json_agg(
+        json_build_object(
+          'type',       'Feature',
+          'geometry',   ST_AsGeoJSON(geom)::json,
+          'properties', json_build_object('val', val)
+        )
+      ), '[]'::json)
+    ) AS geojson
+    FROM (
+      SELECT (ST_DumpAsPolygons(rast)).geom,
+             (ST_DumpAsPolygons(rast)).val
+      FROM green_map.fsi_index
+    ) t
+  `;
+  const result = await query(sql);
+  return result.rows[0].geojson;
+}
+
+/**
  * Return sewer inlets, optionally filtered by bbox.
  *
  * @param {[number,number,number,number]|null} bbox
@@ -247,6 +305,10 @@ module.exports = {
   getPopulation,
   getGreenSpaces,
   getSewerInlets,
+
+  // FSI raster layers (vectorised via ST_DumpAsPolygons)
+  getFsiClass,
+  getFsiIndex,
 
   // Convenience re-exports of simple single-table queries
   getBoundary:           () => getLayer('boundary'),
