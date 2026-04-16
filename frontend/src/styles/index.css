@@ -352,3 +352,19 @@ footer a:hover { text-decoration: underline; }
   border-radius: 3px;
   border: 1px solid rgba(0,0,0,0.1);
 }
+
+/* FSI multi-stop color editor */
+.fsi-stops { display: flex; flex-direction: column; gap: 6px; width: 100%; }
+.fsi-stops-preview { height: 14px; border-radius: 4px; width: 100%; margin-bottom: 4px; }
+.fsi-stop-row { display: flex; align-items: center; gap: 6px; }
+.fsi-stop-row input[type="number"] { width: 44px; }
+.fsi-stop-row input[type="color"] { width: 30px; height: 24px; padding: 0; border: 1px solid #ccc; border-radius: 4px; cursor: pointer; }
+.fsi-stop-remove { background: none; border: none; color: #9ca3af; cursor: pointer; font-size: 0.75rem; padding: 2px 4px; }
+.fsi-stop-remove:hover:not(:disabled) { color: #ef4444; }
+.fsi-stop-remove:disabled { opacity: 0.3; cursor: default; }
+.fsi-stop-add { background: none; border: 1px dashed #d1d5db; border-radius: 4px; color: #6b7280; font-size: 0.75rem; padding: 4px 8px; cursor: pointer; width: 100%; }
+.fsi-stop-add:hover { background: #f9fafb; color: #374151; }
+
+/* FSI legend gradient row */
+.legend-fsi { display: flex; flex-direction: column; gap: 4px; width: 100%; padding: 4px 0; }
+.legend-fsi-labels { display: flex; justify-content: space-between; font-size: 10px; color: #64748b; }

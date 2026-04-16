@@ -63,10 +63,8 @@ export default function LayerControl({
   onFsiRangeChange,
   fsiOpacity,
   onFsiOpacityChange,
-  fsiColorLow,
-  onFsiColorLowChange,
-  fsiColorHigh,
-  onFsiColorHighChange,
+  colorStops,
+  onColorStopsChange,
 }) {
   const [collapsed, setCollapsed] = useState(false);
 
@@ -161,10 +159,8 @@ export default function LayerControl({
                           onRangeChange={onFsiRangeChange}
                           opacity={fsiOpacity}
                           onOpacityChange={onFsiOpacityChange}
-                          colorLow={fsiColorLow}
-                          onColorLowChange={onFsiColorLowChange}
-                          colorHigh={fsiColorHigh}
-                          onColorHighChange={onFsiColorHighChange}
+                          colorStops={colorStops}
+                          onColorStopsChange={onColorStopsChange}
                         />
                       )}
                     </React.Fragment>

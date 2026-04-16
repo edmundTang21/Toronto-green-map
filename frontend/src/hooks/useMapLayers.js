@@ -56,11 +56,7 @@ export function setupMapLayers(map, { setParkingStats, setViewportTreeCount }, t
     layout: { visibility: 'none' },
     paint: {
       'fill-opacity': 0.7,
-      'fill-color': [
-        'interpolate', ['linear'], ['get', 'val'],
-        0, '#ffffff',
-        100, '#0ea5e9',
-      ],
+      'fill-color': ['interpolate', ['linear'], ['get', 'val'], 0, '#ffffff', 100, '#0ea5e9'],
     },
   });
   if (map.getLayer('fsi-layer')) {
@@ -533,13 +529,14 @@ export function setFsiRange(map, min, max) {
 }
 
 /**
- * Set FSI fill color via custom low/high hex values, interpolated over [min, max].
+ * Set FSI fill color via multi-stop array [{ value, color }, ...].
+ * Mapbox clamps at the last stop, so e.g. stop at 80=red means everything 80+ is solid red.
  */
-export function setFsiColors(map, colorLow, colorHigh, min, max) {
+export function setFsiColorStops(map, stops) {
   if (!map.getLayer('fsi-layer')) return;
-  map.setPaintProperty('fsi-layer', 'fill-color', [
-    'interpolate', ['linear'], ['get', 'val'],
-    min, colorLow,
-    max, colorHigh,
-  ]);
+  const sorted = [...stops].sort((a, b) => a.value - b.value);
+  // Build: ['interpolate', ['linear'], ['get', 'val'], v1, c1, v2, c2, ...]
+  const expr = ['interpolate', ['linear'], ['get', 'val']];
+  sorted.forEach(s => { expr.push(s.value, s.color); });
+  map.setPaintProperty('fsi-layer', 'fill-color', expr);
 }
