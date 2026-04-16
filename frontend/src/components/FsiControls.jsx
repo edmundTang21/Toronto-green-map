@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 
 function computeGradient(stops) {
   const sorted = [...stops].sort((a, b) => a.value - b.value);
@@ -7,6 +7,51 @@ function computeGradient(stops) {
   const range = max - min || 1;
   const parts = sorted.map(s => `${s.color} ${((s.value - min) / range * 100).toFixed(1)}%`);
   return `linear-gradient(to right, ${parts.join(', ')})`;
+}
+
+function StopRow({ stop, index, colorStops, onColorStopsChange }) {
+  const [draft, setDraft] = useState(String(stop.value));
+
+  // Sync draft if stop.value changes externally (e.g. loaded from localStorage)
+  useEffect(() => { setDraft(String(stop.value)); }, [stop.value]);
+
+  const handleValueChange = (e) => setDraft(e.target.value);
+
+  const handleValueBlur = () => {
+    const v = Math.max(0, Math.min(100, Number(draft) || 0));
+    setDraft(String(v));
+    const updated = colorStops.map((s, i) =>
+      i === index ? { ...s, value: v } : s
+    );
+    onColorStopsChange(updated);
+  };
+
+  const handleColorChange = (e) => {
+    const updated = colorStops.map((s, i) =>
+      i === index ? { ...s, color: e.target.value } : s
+    );
+    onColorStopsChange(updated);
+  };
+
+  const handleRemove = () => {
+    if (colorStops.length <= 2) return;
+    onColorStopsChange(colorStops.filter((_, i) => i !== index));
+  };
+
+  return (
+    <div className="fsi-stop-row">
+      <input
+        type="number"
+        className="fsi-number"
+        min={0} max={100}
+        value={draft}
+        onChange={handleValueChange}
+        onBlur={handleValueBlur}
+      />
+      <input type="color" value={stop.color} onChange={handleColorChange} />
+      <button className="fsi-stop-remove" onClick={handleRemove} disabled={colorStops.length <= 2}>&#x2715;</button>
+    </div>
+  );
 }
 
 export default function FsiControls({
@@ -31,29 +76,14 @@ export default function FsiControls({
     onRangeChange(min, v);
   };
 
-  // Work with a stable sorted copy; each row knows its index within that sorted array
+  // Sorted copy only for gradient preview and add-stop midpoint logic
   const sorted = [...colorStops].sort((a, b) => a.value - b.value);
-
-  const handleValueChange = (sortedIdx, newValue) => {
-    const updated = sorted.map((s, i) => i === sortedIdx ? { ...s, value: newValue } : s);
-    onColorStopsChange(updated);
-  };
-
-  const handleColorChange = (sortedIdx, newColor) => {
-    const updated = sorted.map((s, i) => i === sortedIdx ? { ...s, color: newColor } : s);
-    onColorStopsChange(updated);
-  };
-
-  const handleRemove = (sortedIdx) => {
-    if (sorted.length <= 2) return;
-    onColorStopsChange(sorted.filter((_, i) => i !== sortedIdx));
-  };
 
   const handleAdd = () => {
     const last = sorted[sorted.length - 1];
     const secondLast = sorted[sorted.length - 2];
     const midValue = Math.round((last.value + secondLast.value) / 2);
-    onColorStopsChange([...sorted, { value: midValue, color: '#fbbf24' }]);
+    onColorStopsChange([...colorStops, { value: midValue, color: '#fbbf24' }]);
   };
 
   return (
@@ -103,33 +133,18 @@ export default function FsiControls({
       <div className="fsi-row" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 6 }}>
         <span className="fsi-label">Color stops</span>
         <div className="fsi-stops">
-          {/* Gradient preview */}
+          {/* Gradient preview — uses sorted stops */}
           <div className="fsi-stops-preview" style={{ background: computeGradient(sorted) }} />
 
-          {/* Stop rows */}
-          {sorted.map((stop, i) => (
-            <div key={i} className="fsi-stop-row">
-              <input
-                type="number"
-                className="fsi-number"
-                value={stop.value}
-                min={0}
-                max={100}
-                onChange={e => handleValueChange(i, Number(e.target.value))}
-              />
-              <input
-                type="color"
-                value={stop.color}
-                onChange={e => handleColorChange(i, e.target.value)}
-              />
-              <button
-                className="fsi-stop-remove"
-                onClick={() => handleRemove(i)}
-                disabled={sorted.length <= 2}
-              >
-                &#x2715;
-              </button>
-            </div>
+          {/* Stop rows — use original (unsorted) indices so delete/update map correctly */}
+          {colorStops.map((stop, i) => (
+            <StopRow
+              key={i}
+              stop={stop}
+              index={i}
+              colorStops={colorStops}
+              onColorStopsChange={onColorStopsChange}
+            />
           ))}
 
           {/* Add button */}

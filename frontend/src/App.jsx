@@ -35,8 +35,8 @@ export default function App() {
 
   // Layer visibility state — keys align with LayerControl's LAYER_DEFS ids
   const [layers, setLayers] = useState({
-    parking: true,
-    greenp: true,
+    parking: false,
+    greenp: false,
     boundary: true,
     population: false,
     rain: false,

@@ -401,7 +401,28 @@ function setupPopups(map, treeState) {
     map.on('mouseleave', layerId, () => popup.remove());
   });
 
-  // Cursor changes
+  // FSI hover — show val (crosshair cursor, dedicated popup)
+  const fsiPopup = new window.__mapboxgl.Popup({ closeButton: false, closeOnClick: false });
+  map.on('mouseenter', 'fsi-layer', (e) => {
+    if (!e.features || !e.features[0]) return;
+    map.getCanvas().style.cursor = 'crosshair';
+    const val = e.features[0].properties.val;
+    fsiPopup.setLngLat(e.lngLat)
+      .setHTML(`<b>FSI</b><br>Value: ${val !== undefined ? Number(val).toFixed(2) : '-'}`)
+      .addTo(map);
+  });
+  map.on('mousemove', 'fsi-layer', (e) => {
+    if (!e.features || !e.features[0]) return;
+    const val = e.features[0].properties.val;
+    fsiPopup.setLngLat(e.lngLat)
+      .setHTML(`<b>FSI</b><br>Value: ${val !== undefined ? Number(val).toFixed(2) : '-'}`);
+  });
+  map.on('mouseleave', 'fsi-layer', () => {
+    map.getCanvas().style.cursor = '';
+    fsiPopup.remove();
+  });
+
+  // Cursor changes (fsi-layer intentionally excluded — it uses crosshair above)
   [
     'parking-fill', 'greenp-circles', 'rain-circles',
     'greenstreets-circles', 'trees-circles', 'impermeable-fill', 'permeable-fill',
