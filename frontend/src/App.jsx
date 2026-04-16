@@ -20,14 +20,14 @@ function loadFsiSettings() {
   try {
     const saved = localStorage.getItem('fsi-settings');
     if (saved) return { ...FSI_DEFAULTS, ...JSON.parse(saved) };
-  } catch {}
+  } catch { /* ignore localStorage errors (e.g. private browsing) */ }
   return FSI_DEFAULTS;
 }
 
 function saveFsiSettings(settings) {
   try {
     localStorage.setItem('fsi-settings', JSON.stringify(settings));
-  } catch {}
+  } catch { /* ignore localStorage errors (e.g. private browsing) */ }
 }
 
 export default function App() {
