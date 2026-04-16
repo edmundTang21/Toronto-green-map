@@ -6,6 +6,14 @@
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 const V = '20260413';
 
+// Mapbox raster-color expressions for FSI color schemes
+const FSI_COLOR_EXPRESSIONS = {
+  blue: ['interpolate', ['linear'], ['raster-value'], 0, '#ffffff', 100, '#0ea5e9'],
+  red: ['interpolate', ['linear'], ['raster-value'], 0, '#ffffff', 100, '#ef4444'],
+  'yellow-red': ['interpolate', ['linear'], ['raster-value'], 0, '#fef08a', 100, '#dc2626'],
+  'green-red': ['interpolate', ['linear'], ['raster-value'], 0, '#22c55e', 100, '#ef4444'],
+};
+
 // Tree tile grid size in degrees
 const TREE_TILE_SIZE = 0.01;
 
@@ -37,7 +45,29 @@ export function setupMapLayers(map, { setParkingStats, setViewportTreeCount }, t
     map.addSource('trees', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
   }
 
+  // FSI raster source
+  if (!map.getSource('fsi')) {
+    map.addSource('fsi', {
+      type: 'raster',
+      url: `${API_URL}/api/raster/FS-national-2015-index.tif`,
+      tileSize: 256,
+    });
+  }
+
   // ===== LAYERS (bottom → top) =====
+
+  // FSI raster layer (rendered beneath vector overlays)
+  addLayer(map, {
+    id: 'fsi-layer',
+    type: 'raster',
+    source: 'fsi',
+    paint: {
+      'raster-opacity': 0.7,
+      'raster-color': FSI_COLOR_EXPRESSIONS['blue'],
+      'raster-color-range': [0, 100],
+    },
+    layout: { visibility: 'none' },
+  });
 
   // Population choropleth
   addLayer(map, {
@@ -475,6 +505,7 @@ export function applyLayerVisibility(map, layers) {
     landcover:   ['landcover-fill'],
     sewer:       ['sewer-circles'],
     trees:       ['trees-circles'],
+    fsi:         ['fsi-layer'],
   };
 
   Object.entries(mapping).forEach(([key, ids]) => {
@@ -483,4 +514,32 @@ export function applyLayerVisibility(map, layers) {
       if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', vis);
     });
   });
+}
+
+/**
+ * Set FSI raster opacity (0–1).
+ */
+export function setFsiOpacity(map, value) {
+  if (map && map.getLayer('fsi-layer')) {
+    map.setPaintProperty('fsi-layer', 'raster-opacity', value);
+  }
+}
+
+/**
+ * Set FSI raster value range [min, max].
+ */
+export function setFsiRange(map, min, max) {
+  if (map && map.getLayer('fsi-layer')) {
+    map.setPaintProperty('fsi-layer', 'raster-color-range', [min, max]);
+  }
+}
+
+/**
+ * Set FSI color scheme — one of: 'blue', 'red', 'yellow-red', 'green-red'.
+ */
+export function setFsiColorScheme(map, scheme) {
+  if (map && map.getLayer('fsi-layer')) {
+    const expr = FSI_COLOR_EXPRESSIONS[scheme] || FSI_COLOR_EXPRESSIONS['blue'];
+    map.setPaintProperty('fsi-layer', 'raster-color', expr);
+  }
 }
