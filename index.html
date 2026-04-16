@@ -1,0 +1,1163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Toronto Green Map</title>
+  <script src="https://api.mapbox.com/mapbox-gl-js/v3.4.0/mapbox-gl.js"></script>
+  <link href="https://api.mapbox.com/mapbox-gl-js/v3.4.0/mapbox-gl.css" rel="stylesheet" />
+  <script src="https://unpkg.com/@turf/turf@7/turf.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; display: flex; flex-direction: column; height: 100vh; }
+    #map { flex: 1; width: 100%; }
+
+    header {
+      height: 48px;
+      background: #1a1a2e;
+      color: white;
+      display: flex;
+      align-items: center;
+      padding: 0 20px;
+      font-size: 18px;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+      z-index: 2000;
+      flex-shrink: 0;
+    }
+    header span { color: #22c55e; margin-left: 6px; }
+
+    footer {
+      height: 36px;
+      background: #1a1a2e;
+      color: #94a3b8;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      gap: 16px;
+      flex-shrink: 0;
+      z-index: 2000;
+    }
+    footer a { color: #22c55e; text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+
+    .panel {
+      position: absolute;
+      z-index: 1000;
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+      padding: 16px;
+      font-size: 13px;
+    }
+
+    .info-panel {
+      top: 60px;
+      right: 12px;
+      max-width: 300px;
+    }
+    .info-panel h2 {
+      font-size: 15px;
+      margin-bottom: 10px;
+      color: #1a1a2e;
+    }
+    .stat { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #f0f0f0; }
+    .stat:last-child { border-bottom: none; }
+    .stat-label { color: #666; }
+    .stat-value { font-weight: 600; color: #1a1a2e; }
+    .stat-value.green { color: #16a34a; }
+    .stat-value.purple { color: #8b5cf6; }
+
+    .layer-control {
+      top: 60px;
+      left: 55px;
+      max-height: calc(100vh - 120px);
+      overflow-y: auto;
+      width: 230px;
+      padding: 14px;
+      transform: translateX(0);
+      transition: transform 0.25s ease, opacity 0.25s ease;
+      opacity: 1;
+    }
+    .layer-control.collapsed {
+      transform: translateX(calc(-100% - 55px));
+      opacity: 0;
+      pointer-events: none;
+    }
+    .layer-menu-fab {
+      position: absolute;
+      top: 60px;
+      left: 12px;
+      z-index: 1100;
+      width: 36px; height: 36px;
+      background: white;
+      border: none;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+      color: #1a1a2e;
+      transition: background 0.15s;
+    }
+    .layer-menu-fab:hover { background: #f1f5f9; }
+    .layer-control-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .layer-control-header span { font-size: 13px; font-weight: 700; color: #1a1a2e; letter-spacing: 0.2px; }
+    .layer-close-btn {
+      background: none; border: none; cursor: pointer;
+      font-size: 18px; color: #94a3b8; line-height: 1;
+      padding: 2px 4px; border-radius: 4px;
+    }
+    .layer-close-btn:hover { background: #f1f5f9; color: #1a1a2e; }
+    .layer-control h3 {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #94a3b8;
+      margin: 14px 0 4px;
+      padding-bottom: 4px;
+      border-bottom: 1px solid #f1f5f9;
+    }
+    .layer-group { margin-bottom: 2px; }
+    .layer-control label {
+      display: flex; align-items: center; gap: 10px; cursor: pointer;
+      padding: 6px 8px; border-radius: 7px; font-size: 13px; color: #334155;
+      transition: background 0.15s; user-select: none;
+    }
+    .layer-control label:hover { background: #f8fafc; }
+    .layer-control input[type="checkbox"] { display: none; }
+    .layer-control input[type="checkbox"] + .layer-swatch {
+      position: relative;
+    }
+    .layer-control input[type="checkbox"]:not(:checked) + .layer-swatch {
+      opacity: 0.35;
+      filter: grayscale(0.5);
+    }
+    .layer-control input[type="checkbox"]:not(:checked) ~ span,
+    .layer-control input[type="checkbox"]:not(:checked) + .layer-swatch + span {
+      color: #94a3b8;
+    }
+    .layer-swatch {
+      width: 14px; height: 14px; border-radius: 3px;
+      flex-shrink: 0; border: 1.5px solid rgba(0,0,0,0.1);
+    }
+    .layer-swatch.circle { border-radius: 50%; }
+    .layer-swatch.line { height: 3px; border-radius: 2px; border: none; margin: 5px 0; }
+    .style-grid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 5px; margin-bottom: 4px;
+    }
+    .style-btn {
+      padding: 7px 4px; font-size: 12px;
+      border-radius: 7px; border: 1.5px solid #e2e8f0;
+      cursor: pointer; text-align: center; background: #f8fafc;
+      color: #64748b; font-weight: 500; transition: all 0.15s;
+    }
+    .style-btn:hover { border-color: #cbd5e1; background: #f1f5f9; }
+    .style-btn.active { background: #1a1a2e; color: #fff; border-color: #1a1a2e; }
+
+    .walk-panel {
+      bottom: 48px;
+      right: 12px;
+      width: 260px;
+      padding: 16px;
+    }
+    .walk-panel-header {
+      display: flex; align-items: center; gap: 8px; margin-bottom: 14px;
+    }
+    .walk-panel-header h3 {
+      font-size: 13px; font-weight: 700; color: #1a1a2e; margin: 0; flex: 1;
+    }
+    .walk-panel-header .walk-icon { font-size: 18px; }
+    .walk-minutes-row {
+      display: flex; align-items: center; gap: 0; margin-bottom: 10px;
+      background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 10px; overflow: hidden;
+    }
+    .walk-minutes-row label { font-size: 11px; color: #94a3b8; padding: 0 10px; font-weight: 600; white-space: nowrap; }
+    .walk-minutes-row input[type="number"] {
+      width: 50px; padding: 8px 4px; border: none; background: transparent;
+      font-size: 15px; font-weight: 700; text-align: center; color: #1a1a2e; outline: none;
+    }
+    .walk-minutes-row span { font-size: 11px; color: #94a3b8; padding-right: 10px; font-weight: 600; }
+    .walk-btn {
+      padding: 7px 14px; border: none; border-radius: 8px;
+      font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.15s;
+    }
+    .walk-btn-place { background: #8b5cf6; color: #fff; width: 100%; padding: 9px; font-size: 13px; border-radius: 8px; }
+    .walk-btn-place:hover { background: #7c3aed; }
+    .walk-btn-place.active { background: #f59e0b; }
+    .walk-btn-clear { background: #fee2e2; color: #ef4444; font-size: 11px; padding: 5px 10px; }
+    .walk-btn-clear:hover { background: #fecaca; }
+    .walk-hint { color: #f59e0b; font-size: 11px; font-weight: 600; margin-top: 8px; text-align: center; }
+    .walk-points-list { max-height: 140px; overflow-y: auto; margin-top: 10px; }
+    .walk-divider { border: none; border-top: 1px solid #f1f5f9; margin: 10px 0; }
+    .walk-point-item {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 4px 0; border-bottom: 1px solid #f0f0f0; font-size: 12px;
+    }
+    .walk-point-item .remove-btn {
+      background: none; border: none; color: #ef4444; cursor: pointer; font-size: 14px;
+    }
+
+    .walk-results-panel {
+      top: 200px; right: 12px; width: 300px; display: none;
+    }
+    .walk-results-panel.active { display: block; }
+    .walk-results-panel h2 {
+      font-size: 14px; margin-bottom: 4px; color: #1a1a2e;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .walk-results-panel .close-btn {
+      background: none; border: none; font-size: 18px; cursor: pointer; color: #999;
+    }
+    .walk-results-subtitle { font-size: 11px; color: #999; margin-bottom: 8px; }
+    .walk-results-panel hr { border: none; border-top: 1px solid #f0f0f0; margin: 3px 0; }
+
+    .legend {
+      bottom: 48px;
+      left: 12px;
+      width: 200px;
+      padding: 12px 14px;
+      transition: transform 0.25s ease, opacity 0.25s ease;
+    }
+    .legend.collapsed { transform: translateY(calc(100% + 12px)); opacity: 0; pointer-events: none; }
+    .legend-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .legend-header span { font-size: 13px; font-weight: 700; color: #1a1a2e; }
+    .legend-toggle-fab {
+      position: absolute;
+      bottom: 48px; left: 12px;
+      z-index: 1100;
+      height: 32px;
+      padding: 0 12px;
+      background: white;
+      border: none;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      cursor: pointer;
+      font-size: 12px; font-weight: 600; color: #1a1a2e;
+      display: none; align-items: center; gap: 6px;
+    }
+    .legend-toggle-fab.visible { display: flex; }
+    .legend-close-btn {
+      background: none; border: none; cursor: pointer;
+      font-size: 16px; color: #94a3b8; padding: 2px 4px; border-radius: 4px;
+    }
+    .legend-close-btn:hover { background: #f1f5f9; color: #1a1a2e; }
+    .legend h3 {
+      font-size: 10px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 1px; color: #94a3b8;
+      margin: 10px 0 4px; padding-bottom: 4px; border-bottom: 1px solid #f1f5f9;
+    }
+    .legend h3:first-of-type { margin-top: 0; }
+    .legend-item { display: flex; align-items: center; gap: 8px; margin-bottom: 3px; font-size: 12px; color: #334155; }
+    .legend-color { width: 14px; height: 14px; border-radius: 3px; flex-shrink: 0; border: 1.5px solid rgba(0,0,0,0.1); }
+    .legend-circle { width: 10px; height: 10px; border-radius: 50%; border: 2px solid; flex-shrink: 0; }
+    .legend-line { width: 14px; height: 3px; border-radius: 2px; flex-shrink: 0; }
+
+    .mapboxgl-popup-content { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 13px; padding: 12px; }
+  </style>
+</head>
+<body>
+  <header>Toronto <span>Green Map</span></header>
+  <div id="map"></div>
+
+  <div class="panel" style="bottom:12px;right:12px;padding:10px 14px;font-size:12px;" id="viewport-stats">
+    <span style="color:#228b22;font-weight:700;" id="viewport-tree-count">0</span> trees in view
+  </div>
+
+  <div class="panel info-panel">
+    <h2>Parking - Study Area</h2>
+    <div class="stat"><span class="stat-label">Parking Lots</span><span class="stat-value" id="lot-count">-</span></div>
+    <div class="stat"><span class="stat-label">Est. Spaces</span><span class="stat-value" id="est-spaces">-</span></div>
+    <div class="stat"><span class="stat-label">Green P</span><span class="stat-value" id="greenp-count">-</span></div>
+    <div class="stat"><span class="stat-label">Green P Spaces</span><span class="stat-value" id="greenp-spaces">-</span></div>
+  </div>
+
+  <div class="panel walk-results-panel" id="walk-results-panel">
+    <h2>
+      <span id="walk-results-title">Parking - 5 min walk</span>
+      <button class="close-btn" id="walk-results-close">&times;</button>
+    </h2>
+    <div class="walk-results-subtitle" id="walk-results-subtitle"></div>
+    <div class="stat"><span class="stat-label">Parking Lots</span><span class="stat-value" id="wr-lot-count">-</span></div>
+    <div class="stat"><span class="stat-label">Est. Lot Spaces</span><span class="stat-value" id="wr-lot-spaces">-</span></div>
+    <div class="stat"><span class="stat-label">Green P</span><span class="stat-value green" id="wr-greenp-count">-</span></div>
+    <div class="stat"><span class="stat-label">Green P Spaces</span><span class="stat-value green" id="wr-greenp-spaces">-</span></div>
+    <hr>
+    <div class="stat"><span class="stat-label"><b>Total Spaces</b></span><span class="stat-value purple" id="wr-total-spaces">-</span></div>
+    <hr>
+    <div class="stat"><span class="stat-label">Est. Population</span><span class="stat-value" id="wr-population">-</span></div>
+  </div>
+
+  <button class="layer-menu-fab" id="layer-menu-fab">&#x2630;</button>
+
+  <div class="panel layer-control" id="layer-control">
+    <div class="layer-control-header">
+      <span>&#x1F5FA; Layers</span>
+      <button class="layer-close-btn" id="layer-toggle-btn" title="Close">&times;</button>
+    </div>
+    <div class="layer-body">
+    <h3>Base Map</h3>
+    <div class="style-grid">
+      <button class="style-btn active" id="style-street">Streets</button>
+      <button class="style-btn" id="style-mono">Mono</button>
+      <button class="style-btn" id="style-satellite">Satellite</button>
+      <button class="style-btn" id="style-terrain">Terrain</button>
+    </div>
+
+    <h3>Parking</h3>
+    <div class="layer-group">
+      <label><input type="checkbox" id="toggle-lots" checked><div class="layer-swatch" style="background:rgba(239,68,68,0.45);"></div><span>Parking Lots</span></label>
+      <label><input type="checkbox" id="toggle-greenp" checked><div class="layer-swatch circle" style="background:#16a34a;"></div><span>Green P</span></label>
+    </div>
+
+    <h3>Environment</h3>
+    <div class="layer-group">
+      <label><input type="checkbox" id="toggle-impermeable"><div class="layer-swatch" style="background:#888;"></div><span>Impermeable</span></label>
+      <label><input type="checkbox" id="toggle-permeable"><div class="layer-swatch" style="background:#22c55e;"></div><span>Permeable</span></label>
+      <label><input type="checkbox" id="toggle-trees"><div class="layer-swatch circle" style="background:#228b22;"></div><span>Trees</span></label>
+      <label><input type="checkbox" id="toggle-greenspaces"><div class="layer-swatch" style="background:rgba(34,197,94,0.4);border-color:#22c55e;"></div><span>Green Spaces</span></label>
+      <label><input type="checkbox" id="toggle-greenstreets"><div class="layer-swatch circle" style="background:#059669;"></div><span>Green Streets</span></label>
+      <label><input type="checkbox" id="toggle-landcover"><div class="layer-swatch" style="background:linear-gradient(135deg,#228b22,#4a90d9);"></div><span>Land Cover</span></label>
+    </div>
+
+    <h3>Water & Drainage</h3>
+    <div class="layer-group">
+      <label><input type="checkbox" id="toggle-sewer"><div class="layer-swatch circle" style="background:#0ea5e9;border-color:#0369a1;"></div><span>Sewer Inlets</span></label>
+      <label><input type="checkbox" id="toggle-rain"><div class="layer-swatch circle" style="background:#0ea5e9;"></div><span>Rain Gauges</span></label>
+      <label><input type="checkbox" id="toggle-flood"><div class="layer-swatch" style="background:linear-gradient(135deg,#dbeafe,#1e3a8a);"></div><span>Flood Reports</span></label>
+    </div>
+
+    <h3>Terrain</h3>
+    <div class="layer-group">
+      <label><input type="checkbox" id="toggle-contours"><div class="layer-swatch line" style="background:#b45309;"></div><span>Contours</span></label>
+    </div>
+
+    <h3>Other</h3>
+    <div class="layer-group">
+      <label><input type="checkbox" id="toggle-boundary" checked><div class="layer-swatch" style="background:rgba(59,130,246,0.15);border-color:#3b82f6;"></div><span>Boundary</span></label>
+      <label><input type="checkbox" id="toggle-population"><div class="layer-swatch" style="background:linear-gradient(135deg,#fee5d9,#a50f15);"></div><span>Population</span></label>
+    </div>
+    </div><!-- end layer-body -->
+  </div>
+
+  <div class="panel walk-panel">
+    <div class="walk-panel-header">
+      <span class="walk-icon">🚶</span>
+      <h3>Walk Time Isochrone</h3>
+    </div>
+    <div class="walk-minutes-row">
+      <label>TIME</label>
+      <input type="number" id="walk-minutes" value="5" min="1" max="60" step="1">
+      <span>min</span>
+    </div>
+    <button class="walk-btn walk-btn-place" id="walk-place-btn">📍 Place Point</button>
+    <div id="walk-hint" class="walk-hint" style="display:none;">Click on the map to place a point</div>
+    <div class="walk-points-list" id="walk-points-list"></div>
+    <hr class="walk-divider" id="walk-divider" style="display:none;">
+    <div style="display:flex;justify-content:flex-end;" id="walk-clear-row" style="display:none;">
+      <button class="walk-btn walk-btn-clear" id="walk-clear-btn">Clear All</button>
+    </div>
+  </div>
+
+  <button class="legend-toggle-fab" id="legend-toggle-fab">&#x25A4; Legend</button>
+
+  <div class="panel legend" id="legend-panel">
+    <div class="legend-header">
+      <span>&#x25A4; Legend</span>
+      <button class="legend-close-btn" id="legend-close-btn">&times;</button>
+    </div>
+
+    <h3>Parking</h3>
+    <div class="legend-item"><div class="legend-color" style="background:rgba(239,68,68,0.45);"></div><span>Parking Lot</span></div>
+    <div class="legend-item"><div class="legend-circle" style="background:#16a34a;border-color:#fff;"></div><span>Green P</span></div>
+    <div class="legend-item"><div class="legend-circle" style="background:#8b5cf6;border-color:#fff;"></div><span>Walk Isochrone</span></div>
+
+    <h3>Environment</h3>
+    <div class="legend-item"><div class="legend-color" style="background:rgba(136,136,136,0.6);border-color:#888;"></div><span>Impermeable</span></div>
+    <div class="legend-item"><div class="legend-color" style="background:rgba(34,197,94,0.5);border-color:#22c55e;"></div><span>Permeable</span></div>
+    <div class="legend-item"><div class="legend-circle" style="background:#228b22;border-color:#fff;"></div><span>Trees</span></div>
+    <div class="legend-item"><div class="legend-color" style="background:rgba(34,197,94,0.4);border-color:#22c55e;"></div><span>Green Spaces</span></div>
+    <div class="legend-item"><div class="legend-circle" style="background:#059669;border-color:#fff;"></div><span>Green Streets</span></div>
+
+    <h3>Water & Drainage</h3>
+    <div class="legend-item"><div class="legend-circle" style="background:#0ea5e9;border-color:#0369a1;"></div><span>Sewer Inlets</span></div>
+    <div class="legend-item"><div class="legend-circle" style="background:#0ea5e9;border-color:#fff;"></div><span>Rain Gauge</span></div>
+    <div class="legend-item"><div class="legend-color" style="background:linear-gradient(to right,#dbeafe,#1e3a8a);border-color:#ccc;"></div><span>Flood Reports</span></div>
+
+    <h3>Other</h3>
+    <div class="legend-item"><div class="legend-color" style="background:rgba(59,130,246,0.15);border:2px solid #3b82f6;"></div><span>Study Area</span></div>
+    <div class="legend-item"><div class="legend-line" style="background:#b45309;"></div><span>Contour</span></div>
+    <div class="legend-item"><div class="legend-color" style="background:linear-gradient(to right,#fee5d9,#a50f15);border-color:#ccc;"></div><span>Population Density</span></div>
+  </div>
+
+  <script>
+    const MAPBOX_TOKEN = process.env.MAPBOX_TOKEN || '';
+    mapboxgl.accessToken = MAPBOX_TOKEN;
+
+    const map = new mapboxgl.Map({
+      container: 'map',
+      style: 'mapbox://styles/mapbox/streets-v12',
+      center: [-79.4189, 43.6386],
+      zoom: 14
+    });
+    map.addControl(new mapboxgl.NavigationControl(), 'top-left');
+
+    // Data stores for analysis
+    let parkingAllGeoJSON = null, greenpAllGeoJSON = null, populationGeoJSON = null;
+    let treeNamesZh = {};
+    let allDataLoaded = false;
+
+    fetch('data/tree_names_zh.json').then(r => r.json()).then(d => { treeNamesZh = d; });
+
+    // Walk isochrone state
+    const walkPoints = [];
+    let walkIdCounter = 0;
+    let placingMode = false;
+    const walkColors = ['#8b5cf6','#f59e0b','#06b6d4','#ec4899','#10b981','#f97316','#6366f1','#14b8a6'];
+
+    const STYLES = {
+      'street':    'mapbox://styles/mapbox/streets-v12',
+      'mono':      'mapbox://styles/mapbox/light-v11',
+      'satellite': 'mapbox://styles/mapbox/satellite-streets-v12',
+      'terrain':   'mapbox://styles/mapbox/outdoors-v12',
+    };
+    let currentStyle = 'street';
+
+    let layersInitialized = false;
+
+    function setupLayers() {
+      // ===== SOURCES =====
+      const V = '20260413';
+      const sources = [
+        ['boundary', `data/liberty_village.geojson?v=${V}`],
+        ['parking', `data/parking/parking_liberty.geojson?v=${V}`],
+        ['greenp', `data/green/greenp_liberty.geojson?v=${V}`],
+        ['population', `data/population.geojson?v=${V}`],
+        ['rain', `data/rain_gauges.geojson?v=${V}`],
+        ['impermeable', `data/impermeable/impermeable.geojson?v=${V}`],
+        ['contours', `data/contours/contours.geojson?v=${V}`],
+        ['flood', `data/flood/flood_reporting.geojson?v=${V}`],
+        ['greenstreets', `data/green/green_streets.geojson?v=${V}`],
+        ['greenspaces', `data/green/green_spaces.geojson?v=${V}`],
+        ['landcover', `data/land_cover.geojson?v=${V}`],
+        ['sewer', `data/sewer/sewer_inlets.geojson?v=${V}`],
+      ];
+      sources.forEach(([id, url]) => {
+        const opts = { type: 'geojson', data: url };
+        if (id === 'impermeable') opts.tolerance = 0;
+        map.addSource(id, opts);
+      });
+
+      // Tree tiles as single source — loaded on demand via empty geojson
+      map.addSource('trees', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+
+      // ===== LAYERS (order matters: bottom first) =====
+
+      // Population choropleth
+      map.addLayer({
+        id: 'population-fill', source: 'population', type: 'fill',
+        paint: {
+          'fill-color': ['interpolate', ['linear'], ['get', 'pop_density'],
+            0, '#fee5d9', 3000, '#fcbba1', 5000, '#fc9272', 7000, '#fb6a4a',
+            10000, '#ef3b2c', 15000, '#cb181d', 20000, '#a50f15'],
+          'fill-opacity': 0.5
+        },
+        layout: { visibility: 'none' }
+      });
+      map.addLayer({
+        id: 'population-line', source: 'population', type: 'line',
+        paint: { 'line-color': '#999', 'line-width': 1 },
+        layout: { visibility: 'none' }
+      });
+
+      // Flood reporting
+      map.addLayer({
+        id: 'flood-fill', source: 'flood', type: 'fill',
+        paint: {
+          'fill-color': ['interpolate', ['linear'], ['get', 'total_floods'],
+            0, '#dbeafe', 10, '#93c5fd', 25, '#60a5fa', 50, '#3b82f6',
+            100, '#2563eb', 200, '#1e40af', 400, '#1e3a8a'],
+          'fill-opacity': 0.45
+        },
+        layout: { visibility: 'none' }
+      });
+      map.addLayer({
+        id: 'flood-line', source: 'flood', type: 'line',
+        paint: { 'line-color': '#1e40af', 'line-width': 1 },
+        layout: { visibility: 'none' }
+      });
+
+      // Green spaces
+      map.addLayer({
+        id: 'greenspaces-fill', source: 'greenspaces', type: 'fill',
+        paint: { 'fill-color': '#22c55e', 'fill-opacity': 0.35 },
+        layout: { visibility: 'none' }
+      });
+      map.addLayer({
+        id: 'greenspaces-line', source: 'greenspaces', type: 'line',
+        paint: { 'line-color': '#22c55e', 'line-width': 1 },
+        layout: { visibility: 'none' }
+      });
+
+      // Land cover
+      map.addLayer({
+        id: 'landcover-fill', source: 'landcover', type: 'fill',
+        paint: {
+          'fill-color': ['match', ['get', 'Desc'],
+            'tree', '#228b22', 'grass/shrub', '#90ee90', 'bare earth', '#d2b48c',
+            'water', '#4a90d9', 'buildings', '#888', 'roads', '#555',
+            'other paved', '#999', 'agriculture', '#daa520', '#ccc'],
+          'fill-opacity': 0.5
+        },
+        layout: { visibility: 'none' }
+      });
+
+      // Sewer inlets
+      map.addLayer({
+        id: 'sewer-circles', source: 'sewer', type: 'circle',
+        paint: {
+          'circle-radius': 3,
+          'circle-color': '#0ea5e9',
+          'circle-opacity': 0.7,
+          'circle-stroke-width': 1,
+          'circle-stroke-color': '#0369a1'
+        },
+        layout: { visibility: 'none' }
+      });
+
+      // Impermeable surface (grey)
+      map.addLayer({
+        id: 'impermeable-fill', source: 'impermeable', type: 'fill',
+        filter: ['==', ['get', 'type'], 'impermeable'],
+        paint: { 'fill-color': '#888888', 'fill-opacity': 0.6 },
+        layout: { visibility: 'none' }
+      });
+
+      // Permeable surface (green)
+      map.addLayer({
+        id: 'permeable-fill', source: 'impermeable', type: 'fill',
+        filter: ['==', ['get', 'type'], 'permeable'],
+        paint: { 'fill-color': '#22c55e', 'fill-opacity': 0.5 },
+        layout: { visibility: 'none' }
+      });
+
+      // Boundary
+      map.addLayer({
+        id: 'boundary-line', source: 'boundary', type: 'line',
+        paint: { 'line-color': '#3b82f6', 'line-width': 3, 'line-dasharray': [3, 2] }
+      });
+      map.addLayer({
+        id: 'boundary-fill', source: 'boundary', type: 'fill',
+        paint: { 'fill-color': '#3b82f6', 'fill-opacity': 0.06 }
+      });
+
+      // Parking lots
+      map.addLayer({
+        id: 'parking-fill', source: 'parking', type: 'fill',
+        paint: { 'fill-color': '#ef4444', 'fill-opacity': 0.4 }
+      });
+      map.addLayer({
+        id: 'parking-line', source: 'parking', type: 'line',
+        paint: { 'line-color': '#ef4444', 'line-width': 1.5 }
+      });
+      map.addLayer({
+        id: 'parking-labels', source: 'parking', type: 'symbol',
+        layout: {
+          'text-field': ['concat', '~', ['to-string', ['get', 'estimated_spaces']]],
+          'text-size': 11, 'text-font': ['DIN Pro Bold', 'Arial Unicode MS Bold'],
+          'text-allow-overlap': false
+        },
+        paint: { 'text-color': '#dc2626', 'text-halo-color': '#fff', 'text-halo-width': 1.5 }
+      });
+
+      // Contours
+      map.addLayer({
+        id: 'contours-line', source: 'contours', type: 'line',
+        paint: {
+          'line-color': ['interpolate', ['linear'], ['get', 'CONTOUR'],
+            70, '#d4a373', 130, '#b45309', 189, '#78350f'],
+          'line-width': ['case', ['==', ['%', ['get', 'CONTOUR'], 10], 0], 2.5, 1],
+          'line-opacity': ['case', ['==', ['%', ['get', 'CONTOUR'], 10], 0], 0.9, 0.5]
+        },
+        layout: { visibility: 'none' }
+      });
+      map.addLayer({
+        id: 'contours-labels', source: 'contours', type: 'symbol',
+        filter: ['==', ['%', ['get', 'CONTOUR'], 10], 0],
+        layout: {
+          'symbol-placement': 'line',
+          'text-field': ['concat', ['to-string', ['get', 'CONTOUR']], 'm'],
+          'text-size': 12, 'text-font': ['DIN Pro Bold', 'Arial Unicode MS Bold'],
+          'text-max-angle': 30, visibility: 'none'
+        },
+        paint: { 'text-color': '#92400e', 'text-halo-color': '#fff', 'text-halo-width': 1.5 }
+      });
+
+      // Green P markers
+      map.addLayer({
+        id: 'greenp-circles', source: 'greenp', type: 'circle',
+        paint: {
+          'circle-radius': 10, 'circle-color': '#16a34a',
+          'circle-stroke-color': '#fff', 'circle-stroke-width': 2
+        }
+      });
+      map.addLayer({
+        id: 'greenp-labels', source: 'greenp', type: 'symbol',
+        layout: {
+          'text-field': ['get', 'capacity'],
+          'text-size': 11, 'text-font': ['DIN Pro Bold', 'Arial Unicode MS Bold'],
+          'text-allow-overlap': true
+        },
+        paint: { 'text-color': '#fff' }
+      });
+
+      // Rain gauges
+      map.addLayer({
+        id: 'rain-circles', source: 'rain', type: 'circle',
+        paint: {
+          'circle-radius': ['interpolate', ['linear'], ['get', 'Volume'], 0, 6, 140, 14],
+          'circle-color': '#0ea5e9', 'circle-stroke-color': '#fff', 'circle-stroke-width': 2
+        },
+        layout: { visibility: 'none' }
+      });
+
+      // Green streets
+      map.addLayer({
+        id: 'greenstreets-circles', source: 'greenstreets', type: 'circle',
+        paint: {
+          'circle-radius': 8, 'circle-color': '#059669',
+          'circle-stroke-color': '#fff', 'circle-stroke-width': 2
+        },
+        layout: { visibility: 'none' }
+      });
+
+      // Trees
+      map.addLayer({
+        id: 'trees-circles', source: 'trees', type: 'circle',
+        minzoom: 13,
+        paint: {
+          'circle-radius': ['interpolate', ['linear'], ['get', 'd'],
+            0, 3, 10, 3, 25, 5, 50, 7, 80, 9, 120, 12],
+          'circle-color': '#228b22',
+          'circle-stroke-color': '#fff', 'circle-stroke-width': 0.5,
+          'circle-opacity': 0.8
+        },
+        layout: { visibility: 'none' }
+      });
+
+      // ===== VIEWPORT BBOX LOG =====
+      function logViewportBbox() {
+        const b = map.getBounds();
+        console.log('Viewport bbox [minLng, minLat, maxLng, maxLat]:', [
+          b.getWest(), b.getSouth(), b.getEast(), b.getNorth()
+        ]);
+      }
+      logViewportBbox();
+      map.on('zoom', logViewportBbox);
+      map.on('moveend', logViewportBbox);
+
+      // ===== STATS =====
+      fetch('data/parking/parking_liberty.geojson').then(r => r.json()).then(data => {
+        document.getElementById('lot-count').textContent = data.features.length;
+        let est = 0;
+        data.features.forEach(f => est += f.properties.estimated_spaces || 0);
+        document.getElementById('est-spaces').textContent = est.toLocaleString();
+      });
+      fetch('data/green/greenp_liberty.geojson').then(r => r.json()).then(data => {
+        document.getElementById('greenp-count').textContent = data.features.length;
+        let s = 0;
+        data.features.forEach(f => s += parseInt(f.properties.capacity) || 0);
+        document.getElementById('greenp-spaces').textContent = s;
+      });
+
+      // Load full city data for isochrone analysis
+      Promise.all([
+        fetch('data/parking/parking_all.geojson').then(r => r.json()),
+        fetch('data/green/greenp_all.geojson').then(r => r.json()),
+        fetch('data/population.geojson').then(r => r.json())
+      ]).then(([p, g, pop]) => {
+        parkingAllGeoJSON = p;
+        greenpAllGeoJSON = g;
+        populationGeoJSON = pop;
+        allDataLoaded = true;
+        console.log('Full city data loaded');
+      });
+
+      // ===== POPUPS / TOOLTIPS =====
+      const popup = new mapboxgl.Popup({ closeButton: false, closeOnClick: false });
+
+      // Parking hover
+      map.on('mouseenter', 'parking-fill', (e) => {
+        const p = e.features[0].properties;
+        popup.setLngLat(e.lngLat)
+          .setHTML(`<b>Lot #${p._id || '-'}</b><br>~${p.estimated_spaces || 0} spaces<br>${Math.round(p.area_m2 || 0).toLocaleString()} m&sup2;`)
+          .addTo(map);
+        map.setPaintProperty('parking-fill', 'fill-opacity', ['case',
+          ['==', ['get', '_id'], p._id], 0.7, 0.4]);
+      });
+      map.on('mouseleave', 'parking-fill', () => {
+        popup.remove();
+        map.setPaintProperty('parking-fill', 'fill-opacity', 0.4);
+      });
+
+      // Green P click
+      map.on('click', 'greenp-circles', (e) => {
+        const p = e.features[0].properties;
+        new mapboxgl.Popup().setLngLat(e.lngLat).setHTML(
+          `<b style="color:#16a34a">Green P</b><br><b>${p.address}</b><br>
+          Type: ${p.carpark_type_str}<br>Capacity: ${p.capacity}<br>
+          Rate: ${p.rate_half_hour ? '$'+p.rate_half_hour.trim()+'/30min' : '-'}`
+        ).addTo(map);
+      });
+
+      // Population hover
+      map.on('mouseenter', 'population-fill', (e) => {
+        const p = e.features[0].properties;
+        popup.setLngLat(e.lngLat).setHTML(
+          `<b>${p.AREA_NAME}</b><br>Pop: ${p.population.toLocaleString()}<br>Density: ${p.pop_density.toLocaleString()}/km&sup2;`
+        ).addTo(map);
+      });
+      map.on('mouseleave', 'population-fill', () => popup.remove());
+
+      // Rain gauge click
+      map.on('click', 'rain-circles', (e) => {
+        const p = e.features[0].properties;
+        new mapboxgl.Popup().setLngLat(e.lngLat).setHTML(
+          `<b>${p.NAME}</b><br>${p.LOCATION}<br>Volume: ${p.Volume} mm<br>Return: ${p.Return}`
+        ).addTo(map);
+      });
+
+      // Contour hover
+      map.on('mouseenter', 'contours-line', (e) => {
+        popup.setLngLat(e.lngLat).setHTML(`${e.features[0].properties.CONTOUR}m`).addTo(map);
+      });
+      map.on('mouseleave', 'contours-line', () => popup.remove());
+
+      // Flood hover
+      map.on('mouseenter', 'flood-fill', (e) => {
+        const p = e.features[0].properties;
+        popup.setLngLat(e.lngLat).setHTML(
+          `<b>${p.AREA_NAME}</b><br>Total: ${p.total_floods}<br>2013: ${p['2013']} | 2014: ${p['2014']}<br>2015: ${p['2015']} | 2016: ${p['2016']} | 2017: ${p['2017']}`
+        ).addTo(map);
+      });
+      map.on('mouseleave', 'flood-fill', () => popup.remove());
+
+      // Green streets click
+      map.on('click', 'greenstreets-circles', (e) => {
+        const p = e.features[0].properties;
+        new mapboxgl.Popup().setLngLat(e.lngLat).setHTML(
+          `<b>${p['Common Name']}</b><br>Type: ${p['Project Type']}<br>
+          Infrastructure: ${p['Green Infrastructure Type']}<br>${p['Description'] || ''}`
+        ).addTo(map);
+      });
+
+      // Green spaces hover
+      map.on('mouseenter', 'greenspaces-fill', (e) => {
+        const p = e.features[0].properties;
+        popup.setLngLat(e.lngLat).setHTML(`<b>${p.AREA_NAME}</b><br>${p.AREA_CLASS}`).addTo(map);
+      });
+      map.on('mouseleave', 'greenspaces-fill', () => popup.remove());
+
+      // Trees click
+      map.on('click', 'trees-circles', (e) => {
+        const p = e.features[0].properties;
+        const zh = treeNamesZh[p.c] || '';
+        const zhLine = zh ? `<br><b style="color:#228b22">${zh}</b>` : '';
+        new mapboxgl.Popup().setLngLat(e.lngLat).setHTML(
+          `<b>${p.c}</b>${zhLine}<br><i>${p.b}</i><br>DBH: ${p.d} cm<br>${p.a}`
+        ).addTo(map);
+      });
+
+      // Land cover hover
+      map.on('mouseenter', 'landcover-fill', (e) => {
+        popup.setLngLat(e.lngLat).setHTML(`<b>${e.features[0].properties.Desc || 'Unknown'}</b>`).addTo(map);
+      });
+      map.on('mouseleave', 'landcover-fill', () => popup.remove());
+
+      // Sewer inlets hover
+      map.on('mouseenter', 'sewer-circles', (e) => {
+        const p = e.features[0].properties;
+        const year = p['Sewer Inlet Install Date'] ? p['Sewer Inlet Install Date'].slice(0, 4) : 'Unknown';
+        popup.setLngLat(e.lngLat).setHTML(
+          `<b>Sewer Inlet</b><br>ID: ${p['Asset Identification']}<br>Installed: ${year}`
+        ).addTo(map);
+      });
+      map.on('mouseleave', 'sewer-circles', () => popup.remove());
+
+      // Impermeable / Permeable surface hover
+      ['impermeable-fill', 'permeable-fill'].forEach(layerId => {
+        map.on('mouseenter', layerId, (e) => {
+          const type = e.features[0].properties.type;
+          popup.setLngLat(e.lngLat).setHTML(`<b>${type.charAt(0).toUpperCase() + type.slice(1)}</b>`).addTo(map);
+        });
+        map.on('mouseleave', layerId, () => popup.remove());
+      });
+
+      // Cursor changes
+      ['parking-fill','greenp-circles','rain-circles','greenstreets-circles','trees-circles','impermeable-fill','permeable-fill'].forEach(id => {
+        map.on('mouseenter', id, () => map.getCanvas().style.cursor = 'pointer');
+        map.on('mouseleave', id, () => map.getCanvas().style.cursor = '');
+      });
+
+      // ===== TREE TILE LOADING =====
+      const TREE_TILE_SIZE = 0.01;
+      const loadedTreeTiles = {};
+      let treesEnabled = false;
+
+      function loadTreeTiles() {
+        if (!treesEnabled || map.getZoom() < 13) {
+          map.getSource('trees').setData({ type: 'FeatureCollection', features: [] });
+          return;
+        }
+        const bounds = map.getBounds();
+        const keys = [];
+        for (let tx = Math.floor(bounds.getWest()/TREE_TILE_SIZE); tx <= Math.floor(bounds.getEast()/TREE_TILE_SIZE); tx++) {
+          for (let ty = Math.floor(bounds.getSouth()/TREE_TILE_SIZE); ty <= Math.floor(bounds.getNorth()/TREE_TILE_SIZE); ty++) {
+            keys.push(`${tx}_${ty}`);
+          }
+        }
+        const allFeatures = [];
+        let pending = 0;
+        keys.forEach(key => {
+          if (loadedTreeTiles[key] && loadedTreeTiles[key].features) {
+            allFeatures.push(...loadedTreeTiles[key].features);
+          } else if (loadedTreeTiles[key] !== 'loading') {
+            loadedTreeTiles[key] = 'loading';
+            pending++;
+            fetch(`tiles/trees_tiles/${key}.geojson`)
+              .then(r => r.ok ? r.json() : { features: [] })
+              .then(data => { loadedTreeTiles[key] = data; pending--; if (pending === 0) loadTreeTiles(); })
+              .catch(() => { loadedTreeTiles[key] = { features: [] }; pending--; });
+          }
+        });
+        if (pending === 0) {
+          map.getSource('trees').setData({ type: 'FeatureCollection', features: allFeatures });
+          setTimeout(updateViewportTreeCount, 100);
+        }
+      }
+
+      map.on('moveend', () => {
+        if (treesEnabled) loadTreeTiles();
+        updateViewportTreeCount();
+      });
+
+      function updateViewportTreeCount() {
+        const el = document.getElementById('viewport-tree-count');
+        if (!treesEnabled || map.getZoom() < 13) {
+          el.textContent = '-';
+          return;
+        }
+        const features = map.queryRenderedFeatures({ layers: ['trees-circles'] });
+        el.textContent = features.length.toLocaleString();
+      }
+
+      // ===== LAYER TOGGLES =====
+      function toggleLayers(checkboxId, layerIds) {
+        // Sync current checkbox state
+        const checked = document.getElementById(checkboxId).checked;
+        const vis = checked ? 'visible' : 'none';
+        layerIds.forEach(id => { if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', vis); });
+
+        if (!layersInitialized) {
+          document.getElementById(checkboxId).addEventListener('change', function() {
+            const v = this.checked ? 'visible' : 'none';
+            layerIds.forEach(id => { if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', v); });
+          });
+        }
+      }
+      toggleLayers('toggle-lots', ['parking-fill', 'parking-line', 'parking-labels']);
+      toggleLayers('toggle-greenp', ['greenp-circles', 'greenp-labels']);
+      toggleLayers('toggle-boundary', ['boundary-line', 'boundary-fill']);
+      toggleLayers('toggle-population', ['population-fill', 'population-line']);
+      toggleLayers('toggle-rain', ['rain-circles']);
+      toggleLayers('toggle-impermeable', ['impermeable-fill']);
+      toggleLayers('toggle-permeable', ['permeable-fill']);
+      toggleLayers('toggle-contours', ['contours-line', 'contours-labels']);
+      toggleLayers('toggle-flood', ['flood-fill', 'flood-line']);
+      toggleLayers('toggle-greenstreets', ['greenstreets-circles']);
+      toggleLayers('toggle-greenspaces', ['greenspaces-fill', 'greenspaces-line']);
+      toggleLayers('toggle-landcover', ['landcover-fill']);
+      toggleLayers('toggle-sewer', ['sewer-circles']);
+
+      // Trees: sync state
+      if (treesEnabled) {
+        map.setLayoutProperty('trees-circles', 'visibility', 'visible');
+        loadTreeTiles();
+      }
+
+      // Trees toggle (special — needs tile loading, bind once)
+      if (!layersInitialized) document.getElementById('toggle-trees').addEventListener('change', function() {
+        treesEnabled = this.checked;
+        const vis = this.checked ? 'visible' : 'none';
+        map.setLayoutProperty('trees-circles', 'visibility', vis);
+        if (treesEnabled) {
+          loadTreeTiles();
+          if (map.getZoom() < 13) {
+            alert('Zoom in to level 13 or closer to see trees');
+          }
+        } else {
+          map.getSource('trees').setData({ type: 'FeatureCollection', features: [] });
+        }
+      });
+
+      // ===== WALK ISOCHRONE (bind once) =====
+      if (layersInitialized) { return; }
+
+      const placeBtn = document.getElementById('walk-place-btn');
+      const clearBtn = document.getElementById('walk-clear-btn');
+      const walkHint = document.getElementById('walk-hint');
+      const walkList = document.getElementById('walk-points-list');
+      const walkMinutesInput = document.getElementById('walk-minutes');
+      const walkResultsPanel = document.getElementById('walk-results-panel');
+
+      placeBtn.addEventListener('click', () => {
+        placingMode = !placingMode;
+        placeBtn.classList.toggle('active', placingMode);
+        placeBtn.textContent = placingMode ? 'Cancel' : 'Place Point';
+        walkHint.style.display = placingMode ? 'block' : 'none';
+        map.getCanvas().style.cursor = placingMode ? 'crosshair' : '';
+      });
+
+      clearBtn.addEventListener('click', () => {
+        walkPoints.forEach(wp => {
+          wp.marker.remove();
+          if (map.getSource(`iso-${wp.id}`)) { map.removeLayer(`iso-fill-${wp.id}`); map.removeLayer(`iso-line-${wp.id}`); map.removeSource(`iso-${wp.id}`); }
+          if (map.getSource(`hl-${wp.id}`)) { if (map.getLayer(`hl-labels-${wp.id}`)) map.removeLayer(`hl-labels-${wp.id}`); map.removeLayer(`hl-fill-${wp.id}`); map.removeSource(`hl-${wp.id}`); }
+        });
+        walkPoints.length = 0;
+        renderWalkList();
+        walkResultsPanel.classList.remove('active');
+      });
+
+      document.getElementById('walk-results-close').addEventListener('click', () => {
+        walkResultsPanel.classList.remove('active');
+      });
+
+      map.on('click', async (e) => {
+        if (!placingMode) return;
+        const minutes = parseInt(walkMinutesInput.value) || 5;
+        const id = ++walkIdCounter;
+        const color = walkColors[(id - 1) % walkColors.length];
+
+        placingMode = false;
+        placeBtn.classList.remove('active');
+        placeBtn.textContent = 'Place Point';
+        walkHint.style.display = 'none';
+        map.getCanvas().style.cursor = '';
+
+        const el = document.createElement('div');
+        el.style.cssText = `width:24px;height:24px;border-radius:50%;background:${color};color:#fff;font-size:11px;font-weight:700;text-align:center;line-height:24px;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.3);`;
+        el.textContent = minutes;
+        const marker = new mapboxgl.Marker(el).setLngLat(e.lngLat).addTo(map);
+
+        try {
+          const url = `https://api.mapbox.com/isochrone/v1/mapbox/walking/${e.lngLat.lng},${e.lngLat.lat}?contours_minutes=${minutes}&polygons=true&access_token=${MAPBOX_TOKEN}`;
+          const geojson = await (await fetch(url)).json();
+
+          map.addSource(`iso-${id}`, { type: 'geojson', data: geojson });
+          map.addLayer({ id: `iso-fill-${id}`, source: `iso-${id}`, type: 'fill', paint: { 'fill-color': color, 'fill-opacity': 0.12 } });
+          map.addLayer({ id: `iso-line-${id}`, source: `iso-${id}`, type: 'line', paint: { 'line-color': color, 'line-width': 2.5 } });
+
+          const results = analyzeParkingInIsochrone(geojson);
+          const total = results.totalEstSpaces + results.totalGreenPSpaces;
+
+          // Highlight parking lots within isochrone
+          if (results.lotFeatures.length > 0) {
+            map.addSource(`hl-${id}`, { type: 'geojson', data: { type: 'FeatureCollection', features: results.lotFeatures } });
+            map.addLayer({ id: `hl-fill-${id}`, source: `hl-${id}`, type: 'fill', paint: { 'fill-color': color, 'fill-opacity': 0.45 } });
+            map.addLayer({ id: `hl-labels-${id}`, source: `hl-${id}`, type: 'symbol',
+              layout: {
+                'text-field': ['concat', '~', ['to-string', ['get', 'estimated_spaces']]],
+                'text-size': 11, 'text-font': ['DIN Pro Bold', 'Arial Unicode MS Bold'],
+                'text-allow-overlap': false
+              },
+              paint: { 'text-color': color, 'text-halo-color': '#fff', 'text-halo-width': 1.5 }
+            });
+          }
+
+          showResultsPanel(results, minutes, color);
+
+          const wp = { id, latlng: e.lngLat, minutes, marker, color, results, _isoGeoJSON: geojson };
+          walkPoints.push(wp);
+          renderWalkList();
+        } catch (err) {
+          console.error('Isochrone error:', err);
+        }
+      });
+
+      function analyzeParkingInIsochrone(isoGeoJSON) {
+        const isoPoly = isoGeoJSON.features[0];
+        const results = { lotFeatures: [], totalEstSpaces: 0, totalGreenPSpaces: 0, lotCount: 0, greenpCount: 0, estPopulation: 0 };
+        const lotsData = parkingAllGeoJSON;
+        const gpData = greenpAllGeoJSON;
+
+        if (lotsData) {
+          lotsData.features.forEach(f => {
+            try {
+              if (turf.booleanPointInPolygon(turf.centroid(f), isoPoly)) {
+                results.totalEstSpaces += f.properties.estimated_spaces || 0;
+                results.lotCount++;
+                results.lotFeatures.push(f);
+              }
+            } catch(e) {}
+          });
+        }
+        if (gpData) {
+          gpData.features.forEach(f => {
+            try {
+              if (turf.booleanPointInPolygon(turf.point(f.geometry.coordinates), isoPoly)) {
+                results.totalGreenPSpaces += parseInt(f.properties.capacity) || 0;
+                results.greenpCount++;
+              }
+            } catch(e) {}
+          });
+        }
+        if (populationGeoJSON) {
+          populationGeoJSON.features.forEach(f => {
+            try {
+              const inter = turf.intersect(turf.featureCollection([isoPoly, f]));
+              if (inter) {
+                results.estPopulation += Math.round((turf.area(inter) / turf.area(f)) * (f.properties.population || 0));
+              }
+            } catch(e) {}
+          });
+        }
+        return results;
+      }
+
+      function showResultsPanel(results, minutes, color) {
+        const total = results.totalEstSpaces + results.totalGreenPSpaces;
+        document.getElementById('walk-results-title').innerHTML = `<span style="color:${color}">Parking - ${minutes} min walk</span>`;
+        document.getElementById('walk-results-subtitle').textContent = allDataLoaded ? 'Full Toronto data' : 'Study area only';
+        document.getElementById('wr-lot-count').textContent = results.lotCount;
+        document.getElementById('wr-lot-spaces').textContent = '~' + results.totalEstSpaces.toLocaleString();
+        document.getElementById('wr-greenp-count').textContent = results.greenpCount;
+        document.getElementById('wr-greenp-spaces').textContent = results.totalGreenPSpaces.toLocaleString();
+        document.getElementById('wr-total-spaces').textContent = '~' + total.toLocaleString();
+        document.getElementById('wr-population').textContent = '~' + (results.estPopulation || 0).toLocaleString();
+        walkResultsPanel.classList.add('active');
+      }
+
+      function removeWalkPoint(id) {
+        const idx = walkPoints.findIndex(wp => wp.id === id);
+        if (idx === -1) return;
+        walkPoints[idx].marker.remove();
+        if (map.getSource(`iso-${id}`)) { map.removeLayer(`iso-fill-${id}`); map.removeLayer(`iso-line-${id}`); map.removeSource(`iso-${id}`); }
+        if (map.getSource(`hl-${id}`)) { if (map.getLayer(`hl-labels-${id}`)) map.removeLayer(`hl-labels-${id}`); map.removeLayer(`hl-fill-${id}`); map.removeSource(`hl-${id}`); }
+        walkPoints.splice(idx, 1);
+        renderWalkList();
+        if (walkPoints.length === 0) walkResultsPanel.classList.remove('active');
+      }
+      window.removeWalkPoint = removeWalkPoint;
+
+      function showWalkPointResults(id) {
+        const wp = walkPoints.find(w => w.id === id);
+        if (wp && wp.results) showResultsPanel(wp.results, wp.minutes, wp.color);
+      }
+      window.showWalkPointResults = showWalkPointResults;
+
+      function renderWalkList() {
+        const divider = document.getElementById('walk-divider');
+        const clearRow = document.getElementById('walk-clear-row');
+        if (walkPoints.length === 0) {
+          walkList.innerHTML = '';
+          divider.style.display = 'none';
+          clearRow.style.display = 'none';
+          return;
+        }
+        divider.style.display = 'block';
+        clearRow.style.display = 'flex';
+        walkList.innerHTML = walkPoints.map(wp => {
+          const total = wp.results ? wp.results.totalEstSpaces + wp.results.totalGreenPSpaces : 0;
+          return `<div class="walk-point-item" style="cursor:pointer;border-radius:6px;padding:6px 8px;margin-bottom:3px;background:#f8fafc;border:none;" onclick="showWalkPointResults(${wp.id})">
+            <div style="display:flex;align-items:center;gap:8px;flex:1;">
+              <div style="width:10px;height:10px;border-radius:50%;background:${wp.color};flex-shrink:0;"></div>
+              <span style="font-weight:600;font-size:12px;color:#1a1a2e;">${wp.minutes} min walk</span>
+              <span style="font-size:11px;color:#64748b;margin-left:auto;">~${total} spaces</span>
+            </div>
+            <button class="remove-btn" onclick="event.stopPropagation();removeWalkPoint(${wp.id})" style="background:none;border:none;color:#94a3b8;cursor:pointer;font-size:16px;padding:0 0 0 8px;line-height:1;">&times;</button>
+          </div>`;
+        }).join('');
+      }
+
+      layersInitialized = true;
+    }
+
+    map.on('load', setupLayers);
+
+    // Legend collapse
+    const legendPanel = document.getElementById('legend-panel');
+    const legendFab = document.getElementById('legend-toggle-fab');
+    const legendCloseBtn = document.getElementById('legend-close-btn');
+    function toggleLegend() {
+      const collapsed = legendPanel.classList.toggle('collapsed');
+      legendFab.classList.toggle('visible', collapsed);
+    }
+    legendFab.addEventListener('click', toggleLegend);
+    legendCloseBtn.addEventListener('click', toggleLegend);
+
+    // Layer menu collapse
+    const layerControl = document.getElementById('layer-control');
+    const layerFab = document.getElementById('layer-menu-fab');
+    const layerCloseBtn = document.getElementById('layer-toggle-btn');
+
+    function toggleLayerMenu() {
+      const collapsed = layerControl.classList.toggle('collapsed');
+      layerFab.style.opacity = collapsed ? '1' : '0';
+      layerFab.style.pointerEvents = collapsed ? 'auto' : 'none';
+    }
+
+    layerFab.addEventListener('click', toggleLayerMenu);
+    layerCloseBtn.addEventListener('click', toggleLayerMenu);
+
+    // Start with fab hidden (panel is open)
+    layerFab.style.opacity = '0';
+    layerFab.style.pointerEvents = 'none';
+
+    // Style switching
+    ['street', 'mono', 'satellite', 'terrain'].forEach(key => {
+      document.getElementById(`style-${key}`).addEventListener('click', () => {
+        if (currentStyle === key) return;
+        currentStyle = key;
+        document.querySelectorAll('.style-btn').forEach(btn => btn.classList.remove('active'));
+        document.getElementById(`style-${key}`).classList.add('active');
+        map.setStyle(STYLES[key]);
+      });
+    });
+
+    map.on('style.load', () => {
+      setupLayers();
+      // Re-add walk isochrone layers
+      walkPoints.forEach(wp => {
+        if (wp._isoGeoJSON) {
+          map.addSource(`iso-${wp.id}`, { type: 'geojson', data: wp._isoGeoJSON });
+          map.addLayer({ id: `iso-fill-${wp.id}`, source: `iso-${wp.id}`, type: 'fill', paint: { 'fill-color': wp.color, 'fill-opacity': 0.12 } });
+          map.addLayer({ id: `iso-line-${wp.id}`, source: `iso-${wp.id}`, type: 'line', paint: { 'line-color': wp.color, 'line-width': 2.5 } });
+        }
+        if (wp.results && wp.results.lotFeatures.length > 0) {
+          map.addSource(`hl-${wp.id}`, { type: 'geojson', data: { type: 'FeatureCollection', features: wp.results.lotFeatures } });
+          map.addLayer({ id: `hl-fill-${wp.id}`, source: `hl-${wp.id}`, type: 'fill', paint: { 'fill-color': wp.color, 'fill-opacity': 0.45 } });
+          map.addLayer({ id: `hl-labels-${wp.id}`, source: `hl-${wp.id}`, type: 'symbol',
+            layout: { 'text-field': ['concat', '~', ['to-string', ['get', 'estimated_spaces']]], 'text-size': 11, 'text-font': ['DIN Pro Bold', 'Arial Unicode MS Bold'], 'text-allow-overlap': false },
+            paint: { 'text-color': wp.color, 'text-halo-color': '#fff', 'text-halo-width': 1.5 }
+          });
+        }
+      });
+    });
+  </script>
+  <footer>
+    Data sources:
+    <a href="https://open.toronto.ca" target="_blank">Toronto Open Data</a> —
+    Parking Lots · Green P · Population · Rain Gauges · Impermeable Surface · Contours · Flood Reports · Green Streets · Green Spaces · Land Cover · Sewer Inlets · Trees
+  </footer>
+</body>
+</html>
