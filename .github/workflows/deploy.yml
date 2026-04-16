@@ -28,11 +28,8 @@ jobs:
             export NVM_DIR="$HOME/.nvm"
             [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
             export PATH="$PATH:/usr/local/bin:/usr/bin"
-            # Resolve pm2 from npm global bin if not already on PATH
-            if ! command -v pm2 &>/dev/null; then
-              NPM_BIN=$(npm bin -g 2>/dev/null || npm root -g 2>/dev/null | sed 's|node_modules$|bin|')
-              export PATH="$PATH:$NPM_BIN"
-            fi
+            # Add all nvm node version bin dirs to PATH (covers pm2 global install)
+            for d in "$NVM_DIR"/versions/node/*/bin; do export PATH="$PATH:$d"; done
 
             DEPLOY_DIR=/var/www/green-map
             REPO_URL=https://github.com/edmundTang21/Toronto-green-map.git
