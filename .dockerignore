@@ -1,0 +1,4 @@
+Dockerfile
+.dockerignore
+*.zip
+permeability_wgs84.tif
