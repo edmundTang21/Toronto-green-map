@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import mapboxgl from 'mapbox-gl';
-import { setupMapLayers, applyLayerVisibility } from '../hooks/useMapLayers.js';
+import { setupMapLayers, applyLayerVisibility, setFsiColorStops, setFsiRange, setFsiOpacity } from '../hooks/useMapLayers.js';
 
 const MAPBOX_TOKEN =
   import.meta.env.VITE_MAPBOX_TOKEN ||
@@ -27,9 +27,23 @@ export default function Map({
   setViewportTreeCount,
   setWalkResults,
   walkResults,
+  fsiColorStops,
+  fsiMin,
+  fsiMax,
+  fsiOpacity,
 }) {
   const containerRef = useRef(null);
   const styleRef = useRef(currentStyle);
+
+  // Refs that always reflect current prop values — used inside the mount-only style.load handler
+  // to avoid stale closures
+  const layersRef = useRef(layers);
+  useEffect(() => { layersRef.current = layers; }, [layers]);
+
+  const fsiStateRef = useRef({ colorStops: fsiColorStops, min: fsiMin, max: fsiMax, opacity: fsiOpacity });
+  useEffect(() => {
+    fsiStateRef.current = { colorStops: fsiColorStops, min: fsiMin, max: fsiMax, opacity: fsiOpacity };
+  }, [fsiColorStops, fsiMin, fsiMax, fsiOpacity]);
 
   // Shared mutable state for tree tile loading (not React state — avoids re-render loops)
   const treeStateRef = useRef({
@@ -65,7 +79,15 @@ export default function Map({
 
     map.on('style.load', () => {
       setupMapLayers(map, { setParkingStats, setViewportTreeCount }, treeStateRef.current);
-      applyLayerVisibility(map, layers);
+      applyLayerVisibility(map, layersRef.current);
+
+      // Reapply FSI settings so color stops, range and opacity survive a basemap switch
+      const fsi = fsiStateRef.current;
+      if (fsi.colorStops?.length >= 2) {
+        setFsiColorStops(map, fsi.colorStops);
+      }
+      setFsiRange(map, fsi.min, fsi.max);
+      setFsiOpacity(map, fsi.opacity);
     });
 
     return () => map.remove();

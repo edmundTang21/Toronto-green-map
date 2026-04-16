@@ -110,6 +110,10 @@ export default function App() {
           currentStyle={currentStyle}
           setParkingStats={setParkingStats}
           setViewportTreeCount={setViewportTreeCount}
+          fsiColorStops={fsiColorStops}
+          fsiMin={fsiMin}
+          fsiMax={fsiMax}
+          fsiOpacity={fsiOpacity}
         />
 
         {/* Viewport tree count badge */}
