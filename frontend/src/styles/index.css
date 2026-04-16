@@ -352,3 +352,117 @@ footer a:hover { text-decoration: underline; }
   border-radius: 3px;
   border: 1px solid rgba(0,0,0,0.1);
 }
+
+/* ── About Modal ─────────────────────────────────── */
+.about-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+
+.about-modal {
+  background: #fff;
+  border-radius: 12px;
+  width: 480px;
+  max-width: 90vw;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+  overflow: hidden;
+}
+
+.about-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.about-header h2 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.about-close {
+  background: none;
+  border: none;
+  font-size: 1rem;
+  cursor: pointer;
+  color: #6b7280;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.about-close:hover { background: #f3f4f6; }
+
+.about-body {
+  padding: 16px 20px;
+  overflow-y: auto;
+  flex: 1;
+  font-size: 0.85rem;
+  line-height: 1.6;
+  color: #374151;
+}
+
+.about-body h3 {
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin: 14px 0 6px;
+  color: #111827;
+}
+
+.about-body ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.about-body li { margin-bottom: 4px; }
+
+.about-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  border-top: 1px solid #e5e7eb;
+  background: #f9fafb;
+}
+
+.about-dont-show {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.82rem;
+  color: #6b7280;
+  cursor: pointer;
+}
+
+.about-got-it {
+  background: #16a34a;
+  color: #fff;
+  border: none;
+  padding: 7px 20px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.about-got-it:hover { background: #15803d; }
+
+.header-about-btn {
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.8);
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+.header-about-btn:hover { color: #fff; background: rgba(255,255,255,0.15); }
