@@ -1,5 +1,6 @@
 import React, { useRef, useState, useCallback } from 'react';
 import Header from './components/Header.jsx';
+import AboutModal from './components/AboutModal.jsx';
 import Footer from './components/Footer.jsx';
 import Map from './components/Map.jsx';
 import LayerControl from './components/LayerControl.jsx';
@@ -81,6 +82,7 @@ export default function App() {
 
   return (
     <>
+      <AboutModal />
       <Header />
       <div className="map-wrapper">
         <Map

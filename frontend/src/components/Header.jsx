@@ -8,6 +8,12 @@ export default function Header() {
       <span style={{ fontSize: '0.65em', fontWeight: 'normal', opacity: 0.5, marginLeft: '0.5em', letterSpacing: '0.02em' }}>
         v{pkg.version}
       </span>
+      <button
+        className="header-about-btn"
+        onClick={() => window.dispatchEvent(new Event('show-about'))}
+        title="About"
+        style={{ marginLeft: 'auto' }}
+      >ℹ</button>
     </header>
   );
 }
