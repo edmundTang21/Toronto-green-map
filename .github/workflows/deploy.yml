@@ -24,10 +24,19 @@ jobs:
           script: |
             set -e
 
-            cd /var/www/green-map
+            DEPLOY_DIR=/var/www/green-map
+            REPO_URL=https://github.com/edmundTang21/Toronto-green-map.git
 
-            echo "Pulling latest changes..."
-            git pull origin main
+            if [ -d "$DEPLOY_DIR/.git" ]; then
+              echo "Repo exists, pulling latest changes..."
+              cd "$DEPLOY_DIR"
+              git pull origin main
+            else
+              echo "Repo not found, cloning fresh..."
+              rm -rf "$DEPLOY_DIR"
+              git clone "$REPO_URL" "$DEPLOY_DIR"
+              cd "$DEPLOY_DIR"
+            fi
 
             echo "Rebuilding frontend..."
             cd frontend
