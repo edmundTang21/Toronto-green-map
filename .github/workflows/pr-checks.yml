@@ -1,0 +1,149 @@
+name: PR Checks
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  frontend-check:
+    name: Frontend Build Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build frontend
+        working-directory: frontend
+        run: npm run build
+
+      - name: Confirm build output exists
+        run: |
+          if [ ! -d "frontend/dist" ] || [ -z "$(ls -A frontend/dist)" ]; then
+            echo "Frontend build output is missing or empty."
+            exit 1
+          fi
+          echo "Frontend build succeeded."
+
+  backend-check:
+    name: Backend Tests Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: backend
+        run: npm ci
+
+      - name: Run backend tests
+        working-directory: backend
+        run: npm test
+
+  security-check:
+    name: Security and Data Checks
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check for hardcoded credentials
+        run: |
+          echo "Scanning for potential hardcoded credentials..."
+          FOUND=0
+
+          # Check for common credential patterns (excluding workflow files themselves and README)
+          if git diff origin/main...HEAD --name-only | xargs -I{} grep -lEi \
+            "(password\s*=\s*['\"][^'\"]{4,}|api_key\s*=\s*['\"][^'\"]{8,}|secret\s*=\s*['\"][^'\"]{8,})" \
+            {} 2>/dev/null | grep -v ".github/workflows/" | grep -v "README.md"; then
+            echo "WARNING: Potential hardcoded credentials found in changed files."
+            FOUND=1
+          fi
+
+          if [ "$FOUND" -eq 1 ]; then
+            echo "Please review the above files for hardcoded credentials before merging."
+            exit 1
+          fi
+
+          echo "No hardcoded credentials detected."
+
+      - name: Check for large GeoJSON files accidentally committed
+        run: |
+          echo "Checking for large GeoJSON files in this PR..."
+          LARGE_FILES=()
+
+          while IFS= read -r file; do
+            if [[ "$file" == *.geojson ]]; then
+              SIZE=$(git cat-file -s "HEAD:$file" 2>/dev/null || echo 0)
+              # Warn if file is larger than 5 MB
+              if [ "$SIZE" -gt 5242880 ]; then
+                LARGE_FILES+=("$file ($((SIZE / 1048576)) MB)")
+              fi
+            fi
+          done < <(git diff origin/main...HEAD --name-only --diff-filter=A)
+
+          if [ ${#LARGE_FILES[@]} -gt 0 ]; then
+            echo "Large GeoJSON files detected in this PR:"
+            for f in "${LARGE_FILES[@]}"; do
+              echo "  - $f"
+            done
+            echo ""
+            echo "Large data files should not be committed to the repository."
+            echo "Add them to .gitignore or store them in the /data directory on the server."
+            exit 1
+          fi
+
+          echo "No large GeoJSON files detected."
+
+  pr-comment:
+    name: Post PR Checklist
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+
+    steps:
+      - name: Post checklist comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const body = `## PR Review Checklist
+
+            Before merging, please verify the following:
+
+            - [ ] Frontend builds successfully
+            - [ ] Backend tests pass
+            - [ ] No hardcoded credentials (passwords, API keys, secrets in source code)
+            - [ ] Data files not accidentally committed (check for large \`.geojson\` files in git diff)
+            - [ ] \`.env\` files are not committed
+            - [ ] New API endpoints are documented in the README or inline comments
+            - [ ] Docker image still builds if \`Dockerfile\` was changed
+
+            > This comment is posted automatically by the PR Checks workflow.`;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body
+            });

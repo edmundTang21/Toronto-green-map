@@ -1,0 +1,42 @@
+# Dependencies
+node_modules/
+
+# Frontend build output
+frontend/dist/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Large raster files
+*.tif
+*.tiff
+permeability_wgs84.zip
+
+# Large raw source GeoJSON files (kept on server, not in git)
+data/parking/Parking Lot - 4326.geojson
+data/sewer/Sewer Inlets - 4326.geojson
+data/green/Green Spaces - 4326.geojson
+data/green/Green Streets Map - 4326.geojson
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Editor directories
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+npm-debug.log*
+
+# PM2
+.pm2/
+
+# OS
+Thumbs.db

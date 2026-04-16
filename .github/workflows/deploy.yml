@@ -1,0 +1,46 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    name: Deploy to 167.172.139.126
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: 167.172.139.126
+          username: root
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            set -e
+
+            cd /var/www/green-map
+
+            echo "Pulling latest changes..."
+            git pull origin main
+
+            echo "Rebuilding frontend..."
+            cd frontend
+            npm ci
+            npm run build
+            cd ..
+
+            echo "Restarting backend with PM2..."
+            if pm2 describe green-map-backend > /dev/null 2>&1; then
+              pm2 restart green-map-backend
+            else
+              pm2 start backend/index.js --name green-map-backend
+            fi
+
+            pm2 save
+
+            echo "Deployment complete."
