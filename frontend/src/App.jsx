@@ -58,8 +58,11 @@ export default function App() {
   const handleFsiRangeChange = useCallback((min, max) => {
     setFsiMin(min);
     setFsiMax(max);
-    if (mapRef.current) setFsiRange(mapRef.current, min, max);
-  }, [mapRef]);
+    if (mapRef.current) {
+      setFsiRange(mapRef.current, min, max);
+      setFsiColors(mapRef.current, fsiColorLow, fsiColorHigh, min, max);
+    }
+  }, [mapRef, fsiColorLow, fsiColorHigh]);
 
   const handleFsiOpacityChange = useCallback((value) => {
     setFsiOpacityState(value);
@@ -68,13 +71,13 @@ export default function App() {
 
   const handleFsiColorLowChange = useCallback((hex) => {
     setFsiColorLow(hex);
-    if (mapRef.current) setFsiColors(mapRef.current, hex, fsiColorHigh);
-  }, [mapRef, fsiColorHigh]);
+    if (mapRef.current) setFsiColors(mapRef.current, hex, fsiColorHigh, fsiMin, fsiMax);
+  }, [mapRef, fsiColorHigh, fsiMin, fsiMax]);
 
   const handleFsiColorHighChange = useCallback((hex) => {
     setFsiColorHigh(hex);
-    if (mapRef.current) setFsiColors(mapRef.current, fsiColorLow, hex);
-  }, [mapRef, fsiColorLow]);
+    if (mapRef.current) setFsiColors(mapRef.current, fsiColorLow, hex, fsiMin, fsiMax);
+  }, [mapRef, fsiColorLow, fsiMin, fsiMax]);
 
   return (
     <>
