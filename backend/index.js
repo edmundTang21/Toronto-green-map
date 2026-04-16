@@ -119,6 +119,26 @@ app.get('/api/green/all', (req, res, next) => {
 });
 
 // ---------------------------------------------------------------------------
+// Tree Chinese name lookup endpoint
+// ---------------------------------------------------------------------------
+
+app.get('/api/data/trees-names-zh', (req, res, next) => {
+  const filePath = path.join(DATA_DIR, 'tree_names_zh.json');
+  if (cache.has(filePath)) {
+    res.set('Cache-Control', 'public, max-age=86400');
+    return res.json(cache.get(filePath));
+  }
+  fs.readFile(filePath, 'utf8')
+    .then(raw => {
+      const data = JSON.parse(raw);
+      cache.set(filePath, data);
+      res.set('Cache-Control', 'public, max-age=86400');
+      res.json(data);
+    })
+    .catch(next);
+});
+
+// ---------------------------------------------------------------------------
 // FSI raster file endpoint (serves raw GeoTIFF for use as Mapbox raster source)
 // ---------------------------------------------------------------------------
 
