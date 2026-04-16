@@ -569,6 +569,13 @@ export function setContourColor(map, color) {
   map.setPaintProperty('contours-line', 'line-color', color);
 }
 
+export const CONTOUR_WIDTH_DEFAULT = 1;
+
+export function setContourWidth(map, width) {
+  if (!map.getLayer('contours-line')) return;
+  map.setPaintProperty('contours-line', 'line-width', width);
+}
+
 /**
  * Set FSI fill color via multi-stop array [{ value, color }, ...].
  * Mapbox clamps at the last stop, so e.g. stop at 80=red means everything 80+ is solid red.
