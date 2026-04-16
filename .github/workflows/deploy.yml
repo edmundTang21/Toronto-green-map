@@ -24,6 +24,11 @@ jobs:
           script: |
             set -e
 
+            # Ensure Node.js is available (handles nvm or system installs)
+            export NVM_DIR="$HOME/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+            export PATH="$PATH:/usr/local/bin:/usr/bin"
+
             DEPLOY_DIR=/var/www/green-map
             REPO_URL=https://github.com/edmundTang21/Toronto-green-map.git
 
@@ -39,7 +44,7 @@ jobs:
             fi
 
             echo "Rebuilding frontend..."
-            cd frontend
+            cd "$DEPLOY_DIR/frontend"
             npm ci
             npm run build
             cd ..
