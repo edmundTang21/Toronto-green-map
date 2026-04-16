@@ -123,8 +123,8 @@ app.get('/api/green/all', (req, res, next) => {
 // ---------------------------------------------------------------------------
 
 const ALLOWED_RASTERS = new Set([
-  'FS-national-2015-class.tif',
-  'FS-national-2015-index.tif',
+  'toronto-FSI-class.tif',
+  'toronto-FSI-index.tif',
 ]);
 
 app.get('/api/raster/:filename', (req, res) => {
