@@ -151,7 +151,7 @@ export function setupMapLayers(map, { setParkingStats, setViewportTreeCount }, t
   // Boundary
   addLayer(map, {
     id: 'boundary-line', source: 'boundary', type: 'line',
-    paint: { 'line-color': '#3b82f6', 'line-width': 3, 'line-dasharray': [3, 2] },
+    paint: { 'line-color': '#3b82f6', 'line-width': 1.5, 'line-dasharray': [3, 2] },
   });
   addLayer(map, {
     id: 'boundary-fill', source: 'boundary', type: 'fill',
