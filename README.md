@@ -2,7 +2,7 @@
 
 **An interactive map exploring Toronto's green spaces, urban trees, parking, flooding, and walkability — all in one place.**
 
-🔗 **Live at [edmund-tang.us](https://edmund-tang.us)**
+🔗 **Live at [edmund-tang.us](https://edmund-tang.us/map/)**
 
 ![Map screenshot](screenshot.png)
 
