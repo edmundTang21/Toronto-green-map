@@ -50,6 +50,11 @@ jobs:
               cd "$DEPLOY_DIR"
             fi
 
+            echo "Installing backend dependencies..."
+            cd "$DEPLOY_DIR/backend"
+            npm ci
+            cd ..
+
             echo "Rebuilding frontend..."
             cd "$DEPLOY_DIR/frontend"
             npm ci
