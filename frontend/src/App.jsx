@@ -9,6 +9,27 @@ import InfoPanel from './components/InfoPanel.jsx';
 import WalkPanel from './components/WalkPanel.jsx';
 import { setFsiOpacity, setFsiRange, setFsiColorStops as setFsiColorStopsMap } from './hooks/useMapLayers.js';
 
+const FSI_DEFAULTS = {
+  colorStops: [{ value: 0, color: '#ffffff' }, { value: 100, color: '#0ea5e9' }],
+  min: 0,
+  max: 100,
+  opacity: 0.7,
+};
+
+function loadFsiSettings() {
+  try {
+    const saved = localStorage.getItem('fsi-settings');
+    if (saved) return { ...FSI_DEFAULTS, ...JSON.parse(saved) };
+  } catch { /* ignore localStorage errors (e.g. private browsing) */ }
+  return FSI_DEFAULTS;
+}
+
+function saveFsiSettings(settings) {
+  try {
+    localStorage.setItem('fsi-settings', JSON.stringify(settings));
+  } catch { /* ignore localStorage errors (e.g. private browsing) */ }
+}
+
 export default function App() {
   const mapRef = useRef(null);
 
@@ -31,14 +52,12 @@ export default function App() {
     fsi: false,
   });
 
-  // FSI controls state
-  const [fsiMin, setFsiMin] = useState(0);
-  const [fsiMax, setFsiMax] = useState(100);
-  const [fsiOpacity, setFsiOpacityState] = useState(0.7);
-  const [fsiColorStops, setFsiColorStops] = useState([
-    { value: 0, color: '#ffffff' },
-    { value: 100, color: '#0ea5e9' },
-  ]);
+  // FSI controls state — initialized from localStorage
+  const fsiInit = loadFsiSettings();
+  const [fsiMin, setFsiMin] = useState(fsiInit.min);
+  const [fsiMax, setFsiMax] = useState(fsiInit.max);
+  const [fsiOpacity, setFsiOpacityState] = useState(fsiInit.opacity);
+  const [fsiColorStops, setFsiColorStops] = useState(fsiInit.colorStops);
 
   // Basemap style
   const [currentStyle, setCurrentStyle] = useState('street');
@@ -61,20 +80,24 @@ export default function App() {
   const handleFsiRangeChange = useCallback((min, max) => {
     setFsiMin(min);
     setFsiMax(max);
+    saveFsiSettings({ colorStops: fsiColorStops, min, max, opacity: fsiOpacity });
     if (mapRef.current) {
       setFsiRange(mapRef.current, min, max);
+      setFsiColorStopsMap(mapRef.current, fsiColorStops);
     }
-  }, [mapRef]);
+  }, [fsiColorStops, fsiOpacity]);
 
   const handleFsiOpacityChange = useCallback((value) => {
     setFsiOpacityState(value);
+    saveFsiSettings({ colorStops: fsiColorStops, min: fsiMin, max: fsiMax, opacity: value });
     if (mapRef.current) setFsiOpacity(mapRef.current, value);
-  }, [mapRef]);
+  }, [fsiColorStops, fsiMin, fsiMax]);
 
   const handleFsiColorStopsChange = useCallback((stops) => {
     setFsiColorStops(stops);
+    saveFsiSettings({ colorStops: stops, min: fsiMin, max: fsiMax, opacity: fsiOpacity });
     if (mapRef.current) setFsiColorStopsMap(mapRef.current, stops);
-  }, []);
+  }, [fsiMin, fsiMax, fsiOpacity]);
 
   return (
     <>
