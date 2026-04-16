@@ -65,7 +65,7 @@ footer a:hover { text-decoration: underline; }
   left: 55px;
   max-height: calc(100vh - 120px);
   overflow-y: auto;
-  width: 230px;
+  width: 280px;
   padding: 14px;
   transform: translateX(0);
   transition: transform 0.25s ease, opacity 0.25s ease;

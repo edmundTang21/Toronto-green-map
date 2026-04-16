@@ -32,7 +32,7 @@ const LAYER_DEFS = [
   { id: 'sewer',        label: 'Sewer Inlets',        swatchClass: 'circle', swatchStyle: { background: '#0ea5e9', borderColor: '#0369a1' },             section: 'Water & Drainage' },
   { id: 'rain',         label: 'Rain Gauges',         swatchClass: 'circle', swatchStyle: { background: '#0ea5e9' },                                    section: 'Water & Drainage' },
   { id: 'flood',        label: 'Flood Reports',       swatchClass: '',       swatchStyle: { background: 'linear-gradient(135deg,#dbeafe,#1e3a8a)' },    section: 'Water & Drainage' },
-  { id: 'fsi',          label: 'Flood Susceptibility',swatchClass: '',       swatchStyle: { background: 'linear-gradient(135deg,#ffffff,#0ea5e9)' },    section: 'Water & Drainage' },
+  { id: 'fsi',          label: 'FSI',                 swatchClass: '',       swatchStyle: { background: 'linear-gradient(135deg,#ffffff,#0ea5e9)' },    section: 'Water & Drainage' },
   { id: 'contours',     label: 'Contours',     swatchClass: 'line',   swatchStyle: { background: '#b45309' },                                    section: 'Terrain' },
   { id: 'boundary',     label: 'Boundary',     swatchClass: '',       swatchStyle: { background: 'rgba(59,130,246,0.15)', borderColor: '#3b82f6' }, section: 'Other' },
   { id: 'population',   label: 'Population',   swatchClass: '',       swatchStyle: { background: 'linear-gradient(135deg,#fee5d9,#a50f15)' },    section: 'Other' },

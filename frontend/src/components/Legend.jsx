@@ -93,7 +93,7 @@ export default function Legend({ fsiVisible = false, fsiMin = 0, fsiMax = 100, f
 
         {fsiVisible && (
           <>
-            <h3>Flood Susceptibility</h3>
+            <h3>FSI</h3>
             <div className="legend-item" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 4 }}>
               <div
                 className="legend-color"
