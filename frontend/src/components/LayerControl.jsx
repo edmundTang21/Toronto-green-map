@@ -67,6 +67,8 @@ export default function LayerControl({
   onColorStopsChange,
   boundaryWidth,
   onBoundaryWidthChange,
+  contourColor,
+  onContourColorChange,
 }) {
   const [collapsed, setCollapsed] = useState(false);
 
@@ -164,6 +166,17 @@ export default function LayerControl({
                           colorStops={colorStops}
                           onColorStopsChange={onColorStopsChange}
                         />
+                      )}
+                      {def.id === 'contours' && visibility['contours'] && (
+                        <div className="layer-sub-control">
+                          <span className="layer-sub-label">Color</span>
+                          <input
+                            type="color"
+                            value={contourColor}
+                            onChange={(e) => onContourColorChange(e.target.value)}
+                            className="layer-sub-color"
+                          />
+                        </div>
                       )}
                       {def.id === 'boundary' && visibility['boundary'] && (
                         <div className="layer-sub-control">

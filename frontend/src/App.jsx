@@ -7,7 +7,7 @@ import LayerControl from './components/LayerControl.jsx';
 import Legend from './components/Legend.jsx';
 import InfoPanel from './components/InfoPanel.jsx';
 import WalkPanel from './components/WalkPanel.jsx';
-import { setFsiOpacity, setFsiRange, setFsiColorStops as setFsiColorStopsMap, setBoundaryWidth } from './hooks/useMapLayers.js';
+import { setFsiOpacity, setFsiRange, setFsiColorStops as setFsiColorStopsMap, setBoundaryWidth, setContourColor, CONTOUR_COLOR_DEFAULT } from './hooks/useMapLayers.js';
 
 const FSI_DEFAULTS = {
   colorStops: [{ value: 0, color: '#ffffff' }, { value: 100, color: '#0ea5e9' }],
@@ -67,6 +67,14 @@ export default function App() {
     if (mapRef.current) setBoundaryWidth(mapRef.current, val);
   }, []);
 
+  // Contour color state
+  const [contourColor, setContourColorState] = useState(CONTOUR_COLOR_DEFAULT);
+
+  const handleContourColorChange = useCallback((color) => {
+    setContourColorState(color);
+    if (mapRef.current) setContourColor(mapRef.current, color);
+  }, []);
+
   // Basemap style
   const [currentStyle, setCurrentStyle] = useState('street');
 
@@ -123,6 +131,7 @@ export default function App() {
           fsiMax={fsiMax}
           fsiOpacity={fsiOpacity}
           boundaryWidth={boundaryWidth}
+          contourColor={contourColor}
         />
 
         {/* Viewport tree count badge */}
@@ -149,6 +158,8 @@ export default function App() {
           onColorStopsChange={handleFsiColorStopsChange}
           boundaryWidth={boundaryWidth}
           onBoundaryWidthChange={handleBoundaryWidthChange}
+          contourColor={contourColor}
+          onContourColorChange={handleContourColorChange}
         />
 
         <WalkPanel mapRef={mapRef} />

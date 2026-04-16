@@ -279,6 +279,14 @@ footer a:hover { text-decoration: underline; }
   min-width: 28px;
   text-align: right;
 }
+.layer-sub-color {
+  width: 32px;
+  height: 22px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  padding: 0;
+}
 
 /* FSI Controls */
 .fsi-controls {
