@@ -38,7 +38,10 @@ const LAYER_DEFS = [
   { id: 'population',   label: 'Population',   swatchClass: '',       swatchStyle: { background: 'linear-gradient(135deg,#fee5d9,#a50f15)' },    section: 'Other' },
   { id: 'photos',       label: 'Street Photos', swatchClass: 'circle', swatchStyle: { background: '#f59e0b' },                                   section: 'Other' },
   { id: 'videos',       label: 'Street Videos', swatchClass: 'circle', swatchStyle: { background: '#8b5cf6' },                                   section: 'Other' },
-];
+].filter(layer => {
+  if (import.meta.env.PROD && (layer.id === 'photos' || layer.id === 'videos')) return false;
+  return true;
+});
 
 const SECTIONS = ['Parking', 'Environment', 'Water & Drainage', 'Terrain', 'Other'];
 
