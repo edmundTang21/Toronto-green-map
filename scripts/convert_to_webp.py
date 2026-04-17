@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""Convert JPG street images to WebP format at quality 85."""
+"""Convert JPG street images to WebP format at quality 85.
+
+Note: only *.JPG / *.jpg files are processed. Any .MOV/.mov video files that
+may be co-located in the street_images/ directory are intentionally ignored —
+use scripts/extract_video_metadata.py and ffmpeg to handle those.
+"""
 
 import sys
 from pathlib import Path

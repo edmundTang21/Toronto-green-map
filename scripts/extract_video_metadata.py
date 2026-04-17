@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-"""Extract GPS metadata from street_videos/ and write data/street_videos.geojson.
+"""Extract GPS metadata from street_images/ (source MOV/mov files) and write
+data/street_videos.geojson.  The converted MP4s live in street_videos/ but GPS
+metadata is read from the original MOV files in street_images/ because ffmpeg
+does not copy proprietary Apple GPS atoms into H.264 MP4 containers.
 
 Requires exiftool to be installed (https://exiftool.org/).
 """
@@ -10,10 +13,12 @@ import sys
 from pathlib import Path
 
 DATA_DIR = Path(__file__).parent.parent / 'data'
-VIDEO_DIR = DATA_DIR / 'street_videos'
+# Source MOV files (GPS metadata lives here)
+VIDEO_DIR = DATA_DIR / 'street_images'
 OUT_FILE = DATA_DIR / 'street_videos.geojson'
 
-VIDEO_EXTENSIONS = {'.mp4', '.mov', '.MP4', '.MOV'}
+# Only scan for original MOV source files; MP4 outputs in street_videos/ lack GPS
+VIDEO_EXTENSIONS = {'.mov', '.MOV'}
 
 
 def get_gps_exiftool(path):
@@ -73,8 +78,8 @@ def _parse_exiftool_coord(value, ref):
 
 def main():
     if not VIDEO_DIR.exists():
-        print(f'Video directory not found: {VIDEO_DIR}')
-        print('Create it with: mkdir -p data/street_videos')
+        print(f'Source video directory not found: {VIDEO_DIR}')
+        print('Create it with: mkdir -p data/street_images')
         sys.exit(1)
 
     video_files = [
@@ -83,12 +88,14 @@ def main():
     ]
 
     if not video_files:
-        print(f'No video files found in {VIDEO_DIR}')
+        print(f'No MOV source files found in {VIDEO_DIR}')
 
     features = []
     skipped = []
 
     for vid_path in video_files:
+        # The published filename is the converted MP4 in street_videos/
+        mp4_name = vid_path.stem + '.mp4'
         try:
             coords = get_gps_exiftool(vid_path)
             if coords is None:
@@ -99,9 +106,9 @@ def main():
             features.append({
                 'type': 'Feature',
                 'geometry': {'type': 'Point', 'coordinates': [lng, lat]},
-                'properties': {'filename': vid_path.name},
+                'properties': {'filename': mp4_name},
             })
-            print(f'  OK:   {vid_path.name} -> ({lat:.6f}, {lng:.6f})')
+            print(f'  OK:   {vid_path.name} -> {mp4_name}  ({lat:.6f}, {lng:.6f})')
         except Exception as e:
             print(f'  WARN: {vid_path.name}: {e}')
             skipped.append(vid_path.name)
