@@ -6,11 +6,6 @@
 const API_URL = import.meta.env.VITE_API_URL || '';
 const V = '20260413';
 
-// Module-level guard: keeps a reference to the zoom-end handler so we can
-// remove it before re-registering on basemap switch (fix: accumulating listeners).
-let _zoomEndHandler = null;
-
-
 // Tree tile grid size in degrees
 const TREE_TILE_SIZE = 0.01;
 
@@ -264,7 +259,7 @@ export function setupMapLayers(map, { setParkingStats, setViewportTreeCount }, t
     layout: { visibility: 'none' },
   });
 
-  // Street photos — circles (shown at zoom < 15)
+  // Street photos — circles
   addLayer(map, {
     id: 'photos-circles', source: 'photos', type: 'circle',
     paint: {
@@ -275,22 +270,6 @@ export function setupMapLayers(map, { setParkingStats, setViewportTreeCount }, t
     },
     layout: { visibility: 'none' },
   });
-
-  // Street photos — symbol thumbnails (shown at zoom >= 15)
-  addLayer(map, {
-    id: 'photos-symbols', source: 'photos', type: 'symbol',
-    layout: {
-      'icon-image': ['get', 'filename'],
-      'icon-size': 0.18,
-      'icon-allow-overlap': true,
-      // Hide symbols whose image hasn't loaded yet instead of showing a broken icon
-      'icon-optional': true,
-      visibility: 'none',
-    },
-  });
-
-  // Load photo images and set up zoom-based switching
-  setupPhotoImages(map);
 
   // ===== POPUPS =====
   setupPopups(map, treeState);
@@ -322,64 +301,6 @@ export function setupMapLayers(map, { setParkingStats, setViewportTreeCount }, t
 
 function addLayer(map, spec) {
   if (!map.getLayer(spec.id)) map.addLayer(spec);
-}
-
-/**
- * Load photo images into the Mapbox sprite (using the already-loaded source
- * features via querySourceFeatures) and set up a zoomend listener to swap
- * between circles and symbol thumbnails when the photos layer is visible.
- */
-function setupPhotoImages(map) {
-  const ZOOM_THRESHOLD = 15;
-
-  // --- Fix: use sourcedata instead of a second fetch() ---
-  // Wait for the 'photos' source to finish loading, then pull features
-  // directly from the map via querySourceFeatures — no extra HTTP request.
-  function loadImagesFromSource() {
-    const features = map.querySourceFeatures('photos');
-    features.forEach(f => {
-      const filename = f.properties && f.properties.filename;
-      if (!filename) return;
-      // Skip if image already registered (e.g. after style reload)
-      if (map.hasImage(filename)) return;
-      const url = `${API_URL}/street-images/${filename}`;
-      map.loadImage(url, (err, img) => {
-        if (!err && img && !map.hasImage(filename)) {
-          map.addImage(filename, img);
-        }
-      });
-    });
-  }
-
-  map.on('sourcedata', (e) => {
-    if (e.sourceId === 'photos' && e.isSourceLoaded) {
-      loadImagesFromSource();
-    }
-  });
-
-  // --- Fix: remove previous zoomend handler before registering a new one ---
-  // Prevents listener accumulation across basemap switches.
-  if (_zoomEndHandler) {
-    map.off('zoomend', _zoomEndHandler);
-  }
-
-  // --- Fix: use 'zoomend' (fires once per gesture) instead of 'zoom' (60×/sec) ---
-  _zoomEndHandler = () => {
-    if (!map.getLayer('photos-circles') || !map.getLayer('photos-symbols')) return;
-    const circlesVis = map.getLayoutProperty('photos-circles', 'visibility');
-    const symbolsVis = map.getLayoutProperty('photos-symbols', 'visibility');
-    // If both are hidden the photos layer is off — don't touch it
-    if (circlesVis === 'none' && symbolsVis === 'none') return;
-    const zoom = map.getZoom();
-    if (zoom >= ZOOM_THRESHOLD) {
-      map.setLayoutProperty('photos-circles', 'visibility', 'none');
-      map.setLayoutProperty('photos-symbols', 'visibility', 'visible');
-    } else {
-      map.setLayoutProperty('photos-circles', 'visibility', 'visible');
-      map.setLayoutProperty('photos-symbols', 'visibility', 'none');
-    }
-  };
-  map.on('zoomend', _zoomEndHandler);
 }
 
 function setupPopups(map, treeState) {
@@ -548,13 +469,12 @@ function setupPopups(map, treeState) {
     ).addTo(map);
   }
   map.on('click', 'photos-circles', showPhotoPopup);
-  map.on('click', 'photos-symbols', showPhotoPopup);
 
   // Cursor changes (fsi-layer intentionally excluded — it uses crosshair above)
   [
     'parking-fill', 'greenp-circles', 'rain-circles',
     'greenstreets-circles', 'trees-circles', 'impermeable-fill', 'permeable-fill',
-    'photos-circles', 'photos-symbols',
+    'photos-circles',
   ].forEach(id => {
     map.on('mouseenter', id, () => { map.getCanvas().style.cursor = 'pointer'; });
     map.on('mouseleave', id, () => { map.getCanvas().style.cursor = ''; });
@@ -652,25 +572,10 @@ export function applyLayerVisibility(map, layers) {
     sewer:       ['sewer-circles'],
     trees:       ['trees-circles'],
     fsi:         ['fsi-layer'],
-    photos:      ['photos-circles', 'photos-symbols'],
+    photos:      ['photos-circles'],
   };
 
   Object.entries(mapping).forEach(([key, ids]) => {
-    if (key === 'photos') {
-      // Special handling: when enabled, respect the zoom threshold
-      if (!layers[key]) {
-        ids.forEach(id => {
-          if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', 'none');
-        });
-      } else {
-        const zoom = map.getZoom();
-        const circlesVis = zoom >= 15 ? 'none' : 'visible';
-        const symbolsVis = zoom >= 15 ? 'visible' : 'none';
-        if (map.getLayer('photos-circles')) map.setLayoutProperty('photos-circles', 'visibility', circlesVis);
-        if (map.getLayer('photos-symbols')) map.setLayoutProperty('photos-symbols', 'visibility', symbolsVis);
-      }
-      return;
-    }
     const vis = layers[key] ? 'visible' : 'none';
     ids.forEach(id => {
       if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', vis);
