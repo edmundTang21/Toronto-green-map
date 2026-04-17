@@ -39,6 +39,8 @@ jobs:
             DEPLOY_DIR=/var/www/green-map
             REPO_URL=https://github.com/edmundTang21/Toronto-green-map.git
 
+            git config --global --add safe.directory "$DEPLOY_DIR"
+
             if [ -d "$DEPLOY_DIR/.git" ]; then
               echo "Repo exists, pulling latest changes..."
               cd "$DEPLOY_DIR"
