@@ -260,7 +260,7 @@ export function setupMapLayers(map, { setParkingStats, setViewportTreeCount }, t
     layout: { visibility: 'none' },
   });
 
-  // Street photos
+  // Street photos — circles (shown at zoom < 15)
   addLayer(map, {
     id: 'photos-circles', source: 'photos', type: 'circle',
     paint: {
@@ -271,6 +271,20 @@ export function setupMapLayers(map, { setParkingStats, setViewportTreeCount }, t
     },
     layout: { visibility: 'none' },
   });
+
+  // Street photos — symbol thumbnails (shown at zoom >= 15)
+  addLayer(map, {
+    id: 'photos-symbols', source: 'photos', type: 'symbol',
+    layout: {
+      'icon-image': ['get', 'filename'],
+      'icon-size': 0.18,
+      'icon-allow-overlap': true,
+      visibility: 'none',
+    },
+  });
+
+  // Load photo images and set up zoom-based switching
+  setupPhotoImages(map);
 
   // ===== POPUPS =====
   setupPopups(map, treeState);
@@ -302,6 +316,56 @@ export function setupMapLayers(map, { setParkingStats, setViewportTreeCount }, t
 
 function addLayer(map, spec) {
   if (!map.getLayer(spec.id)) map.addLayer(spec);
+}
+
+/**
+ * Fetch all photo features, load each image into the Mapbox sprite, then
+ * set up a zoom listener to swap between circles and symbols when the
+ * photos layer is visible.
+ */
+function setupPhotoImages(map) {
+  const ZOOM_THRESHOLD = 15;
+
+  fetch(`${API_URL}/api/photos`)
+    .then(r => r.json())
+    .then(data => {
+      const features = (data && data.features) || [];
+      let remaining = features.length;
+      if (remaining === 0) return;
+
+      features.forEach(f => {
+        const filename = f.properties && f.properties.filename;
+        if (!filename) { remaining--; return; }
+        // Skip if image already registered (e.g. after style reload)
+        if (map.hasImage(filename)) { remaining--; return; }
+        const url = `${API_URL}/street-images/${filename}`;
+        map.loadImage(url, (err, img) => {
+          if (!err && img && !map.hasImage(filename)) {
+            map.addImage(filename, img);
+          }
+          remaining--;
+        });
+      });
+    })
+    .catch(() => {});
+
+  // Zoom listener — swap between circles and symbols based on zoom level
+  // Only acts when the photos layer is currently visible
+  map.on('zoom', () => {
+    if (!map.getLayer('photos-circles') || !map.getLayer('photos-symbols')) return;
+    const circlesVis = map.getLayoutProperty('photos-circles', 'visibility');
+    const symbolsVis = map.getLayoutProperty('photos-symbols', 'visibility');
+    // If both are hidden the photos layer is off — don't touch it
+    if (circlesVis === 'none' && symbolsVis === 'none') return;
+    const zoom = map.getZoom();
+    if (zoom >= ZOOM_THRESHOLD) {
+      map.setLayoutProperty('photos-circles', 'visibility', 'none');
+      map.setLayoutProperty('photos-symbols', 'visibility', 'visible');
+    } else {
+      map.setLayoutProperty('photos-circles', 'visibility', 'visible');
+      map.setLayoutProperty('photos-symbols', 'visibility', 'none');
+    }
+  });
 }
 
 function setupPopups(map, treeState) {
@@ -442,8 +506,8 @@ function setupPopups(map, treeState) {
     fsiPopup.remove();
   });
 
-  // Street photos click — show image thumbnail
-  map.on('click', 'photos-circles', (e) => {
+  // Street photos click — show image thumbnail (works for both circles and symbol thumbnails)
+  function showPhotoPopup(e) {
     const p = e.features[0].properties;
     const src = `${API_URL}/street-images/${p.filename}`;
     new window.__mapboxgl.Popup({ maxWidth: '280px' }).setLngLat(e.lngLat).setHTML(
@@ -452,13 +516,15 @@ function setupPopups(map, treeState) {
         <div style="margin-top:6px;font-size:11px;color:#666">${p.filename}</div>
       </div>`
     ).addTo(map);
-  });
+  }
+  map.on('click', 'photos-circles', showPhotoPopup);
+  map.on('click', 'photos-symbols', showPhotoPopup);
 
   // Cursor changes (fsi-layer intentionally excluded — it uses crosshair above)
   [
     'parking-fill', 'greenp-circles', 'rain-circles',
     'greenstreets-circles', 'trees-circles', 'impermeable-fill', 'permeable-fill',
-    'photos-circles',
+    'photos-circles', 'photos-symbols',
   ].forEach(id => {
     map.on('mouseenter', id, () => { map.getCanvas().style.cursor = 'pointer'; });
     map.on('mouseleave', id, () => { map.getCanvas().style.cursor = ''; });
@@ -556,10 +622,25 @@ export function applyLayerVisibility(map, layers) {
     sewer:       ['sewer-circles'],
     trees:       ['trees-circles'],
     fsi:         ['fsi-layer'],
-    photos:      ['photos-circles'],
+    photos:      ['photos-circles', 'photos-symbols'],
   };
 
   Object.entries(mapping).forEach(([key, ids]) => {
+    if (key === 'photos') {
+      // Special handling: when enabled, respect the zoom threshold
+      if (!layers[key]) {
+        ids.forEach(id => {
+          if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', 'none');
+        });
+      } else {
+        const zoom = map.getZoom();
+        const circlesVis = zoom >= 15 ? 'none' : 'visible';
+        const symbolsVis = zoom >= 15 ? 'visible' : 'none';
+        if (map.getLayer('photos-circles')) map.setLayoutProperty('photos-circles', 'visibility', circlesVis);
+        if (map.getLayer('photos-symbols')) map.setLayoutProperty('photos-symbols', 'visibility', symbolsVis);
+      }
+      return;
+    }
     const vis = layers[key] ? 'visible' : 'none';
     ids.forEach(id => {
       if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', vis);
