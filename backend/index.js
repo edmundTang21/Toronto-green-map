@@ -178,6 +178,28 @@ app.get('/api/photos', (req, res, next) => {
 });
 
 // ---------------------------------------------------------------------------
+// Street videos endpoints
+// ---------------------------------------------------------------------------
+
+app.use('/street-videos', express.static(path.resolve(__dirname, '../data/street_videos')));
+
+app.get('/api/videos', (req, res, next) => {
+  const filePath = path.join(DATA_DIR, 'street_videos.geojson');
+  if (cache.has('videos')) {
+    res.set('Cache-Control', 'public, max-age=3600');
+    return res.json(cache.get('videos'));
+  }
+  fs.readFile(filePath, 'utf8')
+    .then(raw => {
+      const data = JSON.parse(raw);
+      cache.set('videos', data);
+      res.set('Cache-Control', 'public, max-age=3600');
+      res.json(data);
+    })
+    .catch(next);
+});
+
+// ---------------------------------------------------------------------------
 // Layer + tile routers
 // ---------------------------------------------------------------------------
 

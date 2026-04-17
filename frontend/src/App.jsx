@@ -8,6 +8,7 @@ import Legend from './components/Legend.jsx';
 import InfoPanel from './components/InfoPanel.jsx';
 import WalkPanel from './components/WalkPanel.jsx';
 import PhotoModal from './components/PhotoModal.jsx';
+import VideoModal from './components/VideoModal.jsx';
 import { setFsiOpacity, setFsiRange, setFsiColorStops as setFsiColorStopsMap, setBoundaryWidth, setContourColor, CONTOUR_COLOR_DEFAULT, setContourWidth, CONTOUR_WIDTH_DEFAULT } from './hooks/useMapLayers.js';
 
 const FSI_DEFAULTS = {
@@ -43,6 +44,15 @@ export default function App() {
     return () => { delete window.__openPhotoModal; };
   }, []);
 
+  // Video modal state — null = closed, { src, filename } = open
+  const [videoModal, setVideoModal] = useState(null);
+
+  // Expose setter globally so useMapLayers click handler can call it
+  useEffect(() => {
+    window.__openVideoModal = (src, filename) => setVideoModal({ src, filename });
+    return () => { delete window.__openVideoModal; };
+  }, []);
+
   // Layer visibility state — keys align with LayerControl's LAYER_DEFS ids
   const [layers, setLayers] = useState({
     parking: false,
@@ -61,6 +71,7 @@ export default function App() {
     trees: false,
     fsi: false,
     photos: false,
+    videos: false,
   });
 
   // FSI controls state — initialized from localStorage
@@ -142,6 +153,13 @@ export default function App() {
           src={photoModal.src}
           filename={photoModal.filename}
           onClose={() => setPhotoModal(null)}
+        />
+      )}
+      {videoModal && (
+        <VideoModal
+          src={videoModal.src}
+          filename={videoModal.filename}
+          onClose={() => setVideoModal(null)}
         />
       )}
       <Header />
