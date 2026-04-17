@@ -54,7 +54,7 @@ def main():
             features.append({
                 'type': 'Feature',
                 'geometry': {'type': 'Point', 'coordinates': [lng, lat]},
-                'properties': {'filename': img_path.name},
+                'properties': {'filename': img_path.stem + '.webp'},
             })
         except Exception as e:
             print(f'  WARN: {img_path.name}: {e}')
