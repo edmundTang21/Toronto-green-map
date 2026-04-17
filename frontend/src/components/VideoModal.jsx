@@ -33,6 +33,7 @@ export default function VideoModal({ src, filename, onClose }) {
       <video
         controls
         autoPlay
+        muted
         onClick={(e) => e.stopPropagation()}
         style={{
           maxWidth: '90vw',
