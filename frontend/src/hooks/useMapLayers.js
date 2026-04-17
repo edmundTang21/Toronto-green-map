@@ -6,6 +6,10 @@
 const API_URL = import.meta.env.VITE_API_URL || '';
 const V = '20260413';
 
+// Module-level guard: keeps a reference to the zoom-end handler so we can
+// remove it before re-registering on basemap switch (fix: accumulating listeners).
+let _zoomEndHandler = null;
+
 
 // Tree tile grid size in degrees
 const TREE_TILE_SIZE = 0.01;
@@ -279,6 +283,8 @@ export function setupMapLayers(map, { setParkingStats, setViewportTreeCount }, t
       'icon-image': ['get', 'filename'],
       'icon-size': 0.18,
       'icon-allow-overlap': true,
+      // Hide symbols whose image hasn't loaded yet instead of showing a broken icon
+      'icon-optional': true,
       visibility: 'none',
     },
   });
@@ -319,39 +325,46 @@ function addLayer(map, spec) {
 }
 
 /**
- * Fetch all photo features, load each image into the Mapbox sprite, then
- * set up a zoom listener to swap between circles and symbols when the
- * photos layer is visible.
+ * Load photo images into the Mapbox sprite (using the already-loaded source
+ * features via querySourceFeatures) and set up a zoomend listener to swap
+ * between circles and symbol thumbnails when the photos layer is visible.
  */
 function setupPhotoImages(map) {
   const ZOOM_THRESHOLD = 15;
 
-  fetch(`${API_URL}/api/photos`)
-    .then(r => r.json())
-    .then(data => {
-      const features = (data && data.features) || [];
-      let remaining = features.length;
-      if (remaining === 0) return;
-
-      features.forEach(f => {
-        const filename = f.properties && f.properties.filename;
-        if (!filename) { remaining--; return; }
-        // Skip if image already registered (e.g. after style reload)
-        if (map.hasImage(filename)) { remaining--; return; }
-        const url = `${API_URL}/street-images/${filename}`;
-        map.loadImage(url, (err, img) => {
-          if (!err && img && !map.hasImage(filename)) {
-            map.addImage(filename, img);
-          }
-          remaining--;
-        });
+  // --- Fix: use sourcedata instead of a second fetch() ---
+  // Wait for the 'photos' source to finish loading, then pull features
+  // directly from the map via querySourceFeatures — no extra HTTP request.
+  function loadImagesFromSource() {
+    const features = map.querySourceFeatures('photos');
+    features.forEach(f => {
+      const filename = f.properties && f.properties.filename;
+      if (!filename) return;
+      // Skip if image already registered (e.g. after style reload)
+      if (map.hasImage(filename)) return;
+      const url = `${API_URL}/street-images/${filename}`;
+      map.loadImage(url, (err, img) => {
+        if (!err && img && !map.hasImage(filename)) {
+          map.addImage(filename, img);
+        }
       });
-    })
-    .catch(() => {});
+    });
+  }
 
-  // Zoom listener — swap between circles and symbols based on zoom level
-  // Only acts when the photos layer is currently visible
-  map.on('zoom', () => {
+  map.on('sourcedata', (e) => {
+    if (e.sourceId === 'photos' && e.isSourceLoaded) {
+      loadImagesFromSource();
+    }
+  });
+
+  // --- Fix: remove previous zoomend handler before registering a new one ---
+  // Prevents listener accumulation across basemap switches.
+  if (_zoomEndHandler) {
+    map.off('zoomend', _zoomEndHandler);
+  }
+
+  // --- Fix: use 'zoomend' (fires once per gesture) instead of 'zoom' (60×/sec) ---
+  _zoomEndHandler = () => {
     if (!map.getLayer('photos-circles') || !map.getLayer('photos-symbols')) return;
     const circlesVis = map.getLayoutProperty('photos-circles', 'visibility');
     const symbolsVis = map.getLayoutProperty('photos-symbols', 'visibility');
@@ -365,7 +378,8 @@ function setupPhotoImages(map) {
       map.setLayoutProperty('photos-circles', 'visibility', 'visible');
       map.setLayoutProperty('photos-symbols', 'visibility', 'none');
     }
-  });
+  };
+  map.on('zoomend', _zoomEndHandler);
 }
 
 function setupPopups(map, treeState) {
@@ -506,14 +520,24 @@ function setupPopups(map, treeState) {
     fsiPopup.remove();
   });
 
+  // Escape user-supplied strings before inserting into innerHTML (fix: XSS)
+  function escapeHtml(str) {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
   // Street photos click — show image thumbnail (works for both circles and symbol thumbnails)
   function showPhotoPopup(e) {
     const p = e.features[0].properties;
-    const src = `${API_URL}/street-images/${p.filename}`;
+    const src = `${API_URL}/street-images/${escapeHtml(p.filename)}`;
     new window.__mapboxgl.Popup({ maxWidth: '280px' }).setLngLat(e.lngLat).setHTML(
       `<div style="text-align:center">
         <img src="${src}" style="width:260px;max-height:200px;object-fit:cover;border-radius:4px;display:block;margin:0 auto"/>
-        <div style="margin-top:6px;font-size:11px;color:#666">${p.filename}</div>
+        <div style="margin-top:6px;font-size:11px;color:#666">${escapeHtml(p.filename)}</div>
       </div>`
     ).addTo(map);
   }
