@@ -534,10 +534,16 @@ function setupPopups(map, treeState) {
   function showPhotoPopup(e) {
     const p = e.features[0].properties;
     const src = `${API_URL}/street-images/${escapeHtml(p.filename)}`;
+    const safeFilename = escapeHtml(p.filename);
     new window.__mapboxgl.Popup({ maxWidth: '280px' }).setLngLat(e.lngLat).setHTML(
       `<div style="text-align:center">
-        <img src="${src}" style="width:260px;max-height:200px;object-fit:cover;border-radius:4px;display:block;margin:0 auto"/>
-        <div style="margin-top:6px;font-size:11px;color:#666">${escapeHtml(p.filename)}</div>
+        <img
+          src="${src}"
+          title="Click to enlarge"
+          onclick="if(window.__openPhotoModal){window.__openPhotoModal('${src}','${safeFilename}')}"
+          style="width:260px;max-height:200px;object-fit:cover;border-radius:4px;display:block;margin:0 auto;cursor:pointer"
+        />
+        <div style="margin-top:6px;font-size:11px;color:#666">${safeFilename}</div>
       </div>`
     ).addTo(map);
   }

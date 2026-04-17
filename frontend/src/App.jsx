@@ -1,4 +1,4 @@
-import React, { useRef, useState, useCallback } from 'react';
+import React, { useRef, useState, useCallback, useEffect } from 'react';
 import Header from './components/Header.jsx';
 import AboutModal from './components/AboutModal.jsx';
 import Footer from './components/Footer.jsx';
@@ -7,6 +7,7 @@ import LayerControl from './components/LayerControl.jsx';
 import Legend from './components/Legend.jsx';
 import InfoPanel from './components/InfoPanel.jsx';
 import WalkPanel from './components/WalkPanel.jsx';
+import PhotoModal from './components/PhotoModal.jsx';
 import { setFsiOpacity, setFsiRange, setFsiColorStops as setFsiColorStopsMap, setBoundaryWidth, setContourColor, CONTOUR_COLOR_DEFAULT, setContourWidth, CONTOUR_WIDTH_DEFAULT } from './hooks/useMapLayers.js';
 
 const FSI_DEFAULTS = {
@@ -32,6 +33,15 @@ function saveFsiSettings(settings) {
 
 export default function App() {
   const mapRef = useRef(null);
+
+  // Photo modal state — null = closed, { src, filename } = open
+  const [photoModal, setPhotoModal] = useState(null);
+
+  // Expose setter globally so useMapLayers popup HTML can call it
+  useEffect(() => {
+    window.__openPhotoModal = (src, filename) => setPhotoModal({ src, filename });
+    return () => { delete window.__openPhotoModal; };
+  }, []);
 
   // Layer visibility state — keys align with LayerControl's LAYER_DEFS ids
   const [layers, setLayers] = useState({
@@ -127,6 +137,13 @@ export default function App() {
   return (
     <>
       <AboutModal />
+      {photoModal && (
+        <PhotoModal
+          src={photoModal.src}
+          filename={photoModal.filename}
+          onClose={() => setPhotoModal(null)}
+        />
+      )}
       <Header />
       <div className="map-wrapper">
         <Map
