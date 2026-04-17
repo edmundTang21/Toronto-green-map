@@ -50,6 +50,7 @@ export default function App() {
     sewer: false,
     trees: false,
     fsi: false,
+    photos: false,
   });
 
   // FSI controls state — initialized from localStorage

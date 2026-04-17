@@ -156,6 +156,28 @@ app.get('/api/raster/:filename', (req, res) => {
 });
 
 // ---------------------------------------------------------------------------
+// Street photos endpoints
+// ---------------------------------------------------------------------------
+
+app.use('/street-images', express.static(path.resolve(__dirname, '../data/street_images')));
+
+app.get('/api/photos', (req, res, next) => {
+  const filePath = path.join(DATA_DIR, 'street_images.geojson');
+  if (cache.has('photos')) {
+    res.set('Cache-Control', 'public, max-age=3600');
+    return res.json(cache.get('photos'));
+  }
+  fs.readFile(filePath, 'utf8')
+    .then(raw => {
+      const data = JSON.parse(raw);
+      cache.set('photos', data);
+      res.set('Cache-Control', 'public, max-age=3600');
+      res.json(data);
+    })
+    .catch(next);
+});
+
+// ---------------------------------------------------------------------------
 // Layer + tile routers
 // ---------------------------------------------------------------------------
 

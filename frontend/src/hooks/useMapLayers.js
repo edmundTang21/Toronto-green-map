@@ -46,6 +46,14 @@ export function setupMapLayers(map, { setParkingStats, setViewportTreeCount }, t
     });
   }
 
+  // Street photos source
+  if (!map.getSource('photos')) {
+    map.addSource('photos', {
+      type: 'geojson',
+      data: `${API_URL}/api/photos`,
+    });
+  }
+
   // ===== LAYERS (bottom → top) =====
 
   // FSI fill layer (rendered beneath vector overlays)
@@ -252,6 +260,18 @@ export function setupMapLayers(map, { setParkingStats, setViewportTreeCount }, t
     layout: { visibility: 'none' },
   });
 
+  // Street photos
+  addLayer(map, {
+    id: 'photos-circles', source: 'photos', type: 'circle',
+    paint: {
+      'circle-radius': 8,
+      'circle-color': '#f59e0b',
+      'circle-stroke-color': '#fff',
+      'circle-stroke-width': 2,
+    },
+    layout: { visibility: 'none' },
+  });
+
   // ===== POPUPS =====
   setupPopups(map, treeState);
 
@@ -422,10 +442,23 @@ function setupPopups(map, treeState) {
     fsiPopup.remove();
   });
 
+  // Street photos click — show image thumbnail
+  map.on('click', 'photos-circles', (e) => {
+    const p = e.features[0].properties;
+    const src = `${API_URL}/street-images/${p.filename}`;
+    new window.__mapboxgl.Popup({ maxWidth: '280px' }).setLngLat(e.lngLat).setHTML(
+      `<div style="text-align:center">
+        <img src="${src}" style="width:260px;max-height:200px;object-fit:cover;border-radius:4px;display:block;margin:0 auto"/>
+        <div style="margin-top:6px;font-size:11px;color:#666">${p.filename}</div>
+      </div>`
+    ).addTo(map);
+  });
+
   // Cursor changes (fsi-layer intentionally excluded — it uses crosshair above)
   [
     'parking-fill', 'greenp-circles', 'rain-circles',
     'greenstreets-circles', 'trees-circles', 'impermeable-fill', 'permeable-fill',
+    'photos-circles',
   ].forEach(id => {
     map.on('mouseenter', id, () => { map.getCanvas().style.cursor = 'pointer'; });
     map.on('mouseleave', id, () => { map.getCanvas().style.cursor = ''; });
@@ -523,6 +556,7 @@ export function applyLayerVisibility(map, layers) {
     sewer:       ['sewer-circles'],
     trees:       ['trees-circles'],
     fsi:         ['fsi-layer'],
+    photos:      ['photos-circles'],
   };
 
   Object.entries(mapping).forEach(([key, ids]) => {
