@@ -53,6 +53,14 @@ export function setupMapLayers(map, { setParkingStats, setViewportTreeCount }, t
     });
   }
 
+  // Street videos source
+  if (!map.getSource('videos')) {
+    map.addSource('videos', {
+      type: 'geojson',
+      data: `${API_URL}/api/videos`,
+    });
+  }
+
   // ===== LAYERS (bottom → top) =====
 
   // FSI fill layer (rendered beneath vector overlays)
@@ -271,6 +279,18 @@ export function setupMapLayers(map, { setParkingStats, setViewportTreeCount }, t
     layout: { visibility: 'none' },
   });
 
+  // Street videos — circles
+  addLayer(map, {
+    id: 'videos-circles', source: 'videos', type: 'circle',
+    paint: {
+      'circle-radius': 8,
+      'circle-color': '#8b5cf6',
+      'circle-stroke-color': '#fff',
+      'circle-stroke-width': 2,
+    },
+    layout: { visibility: 'none' },
+  });
+
   // ===== POPUPS =====
   setupPopups(map, treeState);
 
@@ -470,11 +490,19 @@ function setupPopups(map, treeState) {
   }
   map.on('click', 'photos-circles', showPhotoPopup);
 
+  // Street videos click — open video modal
+  map.on('click', 'videos-circles', (e) => {
+    const p = e.features[0].properties;
+    const src = `${API_URL}/street-videos/${escapeHtml(p.filename)}`;
+    const safeFilename = escapeHtml(p.filename);
+    if (window.__openVideoModal) window.__openVideoModal(src, safeFilename);
+  });
+
   // Cursor changes (fsi-layer intentionally excluded — it uses crosshair above)
   [
     'parking-fill', 'greenp-circles', 'rain-circles',
     'greenstreets-circles', 'trees-circles', 'impermeable-fill', 'permeable-fill',
-    'photos-circles',
+    'photos-circles', 'videos-circles',
   ].forEach(id => {
     map.on('mouseenter', id, () => { map.getCanvas().style.cursor = 'pointer'; });
     map.on('mouseleave', id, () => { map.getCanvas().style.cursor = ''; });
@@ -573,6 +601,7 @@ export function applyLayerVisibility(map, layers) {
     trees:       ['trees-circles'],
     fsi:         ['fsi-layer'],
     photos:      ['photos-circles'],
+    videos:      ['videos-circles'],
   };
 
   Object.entries(mapping).forEach(([key, ids]) => {
