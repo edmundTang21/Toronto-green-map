@@ -14,7 +14,7 @@ QUALITY = 85
 
 
 def convert_directory(src_dir: Path) -> None:
-    from PIL import Image
+    from PIL import Image, ImageOps
 
     jpg_files = sorted(src_dir.glob('*.JPG')) + sorted(src_dir.glob('*.jpg'))
 
@@ -34,6 +34,7 @@ def convert_directory(src_dir: Path) -> None:
             continue
         try:
             with Image.open(jpg_path) as img:
+                img = ImageOps.exif_transpose(img)
                 img.save(webp_path, 'WEBP', quality=QUALITY)
             orig_kb = jpg_path.stat().st_size / 1024
             new_kb = webp_path.stat().st_size / 1024
