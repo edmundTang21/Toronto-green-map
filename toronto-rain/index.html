@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Toronto Precipitation 1991–2025</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; display: flex; height: 100vh; background: #f5f5f5; }
+  #sidebar { width: 260px; min-width: 260px; background: #fff; padding: 24px 20px; overflow-y: auto; border-right: 1px solid #e0e0e0; }
+  #sidebar h2 { font-size: 15px; font-weight: 700; margin-bottom: 4px; color: #111; }
+  #sidebar p.sub { font-size: 11px; color: #888; margin-bottom: 20px; line-height: 1.5; }
+  .section { margin-bottom: 20px; }
+  .section label.head { display: block; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #555; margin-bottom: 8px; }
+  .radio-group { display: flex; flex-direction: column; gap: 6px; }
+  .radio-group label { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: #333; cursor: pointer; }
+  .radio-group input { accent-color: #4a90d9; }
+  .slider-row { margin-bottom: 12px; }
+  .slider-row .lbl { display: flex; justify-content: space-between; font-size: 12px; color: #444; margin-bottom: 4px; }
+  .slider-row input[type=range] { width: 100%; accent-color: #4a90d9; }
+  #main { flex: 1; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+  svg text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+  .dl-btn { display: inline-block; margin-top: 16px; padding: 7px 14px; background: #4a90d9; color: #fff; border: none; border-radius: 5px; font-size: 12px; cursor: pointer; width: 100%; }
+  .dl-btn:hover { background: #357abd; }
+</style>
+</head>
+<body>
+<div id="sidebar">
+  <h2>Toronto Precipitation</h2>
+  <p class="sub">Avg daily rain &amp; snow<br>1991–2025 · Feb 29 excluded</p>
+
+  <div class="section">
+    <label class="head">Rain metric</label>
+    <div class="radio-group">
+      <label><input type="radio" name="metric" value="rain_mean_all" checked> Average incl. dry days</label>
+      <label><input type="radio" name="metric" value="rain_mean_wet"> Average (rainy days only)</label>
+      <label><input type="radio" name="metric" value="rain_freq"> Frequency (% rainy days)</label>
+    </div>
+  </div>
+
+  <div class="section">
+    <label class="head">Label by</label>
+    <div class="radio-group">
+      <label><input type="radio" name="label" value="month"> Month (365 bars)</label>
+      <label><input type="radio" name="label" value="week" checked> Week (52 bars)</label>
+    </div>
+  </div>
+
+  <div class="section">
+    <label class="head">Rain indicator position</label>
+    <div class="radio-group">
+      <label><input type="radio" name="rain-indicator" value="top" checked> Top</label>
+      <label><input type="radio" name="rain-indicator" value="bottom"> Bottom</label>
+    </div>
+  </div>
+
+  <div class="section">
+    <label class="head">Snow indicator position</label>
+    <div class="radio-group">
+      <label><input type="radio" name="snow-indicator" value="top" checked> Top</label>
+      <label><input type="radio" name="snow-indicator" value="bottom"> Bottom</label>
+    </div>
+  </div>
+
+  <div class="section">
+    <label class="head">Visual controls</label>
+    <div class="slider-row">
+      <div class="lbl"><span>Centre radius</span><span id="v-centre">80</span></div>
+      <input type="range" id="s-centre" min="5" max="80" value="80">
+    </div>
+    <div class="slider-row">
+      <div class="lbl"><span>Snow ring depth</span><span id="v-snow">20</span></div>
+      <input type="range" id="s-snow" min="5" max="40" value="20">
+    </div>
+    <div class="slider-row">
+      <div class="lbl"><span>Ring gap</span><span id="v-gap">4</span></div>
+      <input type="range" id="s-gap" min="1" max="15" value="4">
+    </div>
+    <div class="slider-row">
+      <div class="lbl"><span>Rain ring depth</span><span id="v-rain">31</span></div>
+      <input type="range" id="s-rain" min="10" max="60" value="31">
+    </div>
+    <div class="slider-row">
+      <div class="lbl"><span>Bar width</span><span id="v-barw">0.20</span></div>
+      <input type="range" id="s-barw" min="20" max="100" value="20">
+    </div>
+    <div class="slider-row">
+      <div class="lbl"><span>Indicator font size</span><span id="v-indsize">2.3</span></div>
+      <input type="range" id="s-indsize" min="10" max="60" value="23">
+    </div>
+    <div class="slider-row">
+      <div class="lbl"><span>Monthly line width</span><span id="v-lw">0.8</span></div>
+      <input type="range" id="s-lw" min="1" max="30" value="8">
+    </div>
+  </div>
+
+  <div class="section">
+    <label class="head">Legend</label>
+    <div style="display:flex;flex-direction:column;gap:6px;">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <div style="width:14px;height:14px;background:#B6E5E8;border-radius:2px;flex-shrink:0;"></div>
+        <span style="font-size:12.5px;color:#333;">Rain (outer ring)</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <div style="width:14px;height:14px;background:#76659E;border-radius:2px;flex-shrink:0;"></div>
+        <span style="font-size:12.5px;color:#333;">Snow (inner ring)</span>
+      </div>
+    </div>
+  </div>
+
+  <button class="dl-btn" id="dl-svg">Download SVG</button>
+</div>
+
+<div id="main">
+  <svg id="chart"></svg>
+</div>
+
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<script>
+const DATA = [{"mmdd":"01-01","rain_mean_all":0.9971428571428571,"rain_mean_wet":3.4899999999999998,"rain_freq":0.2857142857142857,"snowfall_cm":0.7080000000000001,"month":1,"week":1},{"mmdd":"01-02","rain_mean_all":0.7257142857142856,"rain_mean_wet":3.175,"rain_freq":0.22857142857142856,"snowfall_cm":0.526,"month":1,"week":1},{"mmdd":"01-03","rain_mean_all":0.9085714285714286,"rain_mean_wet":2.4461538461538463,"rain_freq":0.37142857142857144,"snowfall_cm":1.32,"month":1,"week":1},{"mmdd":"01-04","rain_mean_all":2.1485714285714286,"rain_mean_wet":7.519999999999999,"rain_freq":0.2857142857142857,"snowfall_cm":0.26000000000000006,"month":1,"week":1},{"mmdd":"01-05","rain_mean_all":1.6342857142857143,"rain_mean_wet":5.199999999999999,"rain_freq":0.3142857142857143,"snowfall_cm":0.578,"month":1,"week":1},{"mmdd":"01-06","rain_mean_all":0.62,"rain_mean_wet":2.411111111111111,"rain_freq":0.2571428571428571,"snowfall_cm":0.784,"month":1,"week":1},{"mmdd":"01-07","rain_mean_all":0.3142857142857143,"rain_mean_wet":2.2,"rain_freq":0.14285714285714285,"snowfall_cm":0.8420000000000001,"month":1,"week":1},{"mmdd":"01-08","rain_mean_all":1.4514285714285713,"rain_mean_wet":5.644444444444444,"rain_freq":0.2571428571428571,"snowfall_cm":0.57,"month":1,"week":2},{"mmdd":"01-09","rain_mean_all":1.4828571428571429,"rain_mean_wet":3.992307692307693,"rain_freq":0.37142857142857144,"snowfall_cm":0.952,"month":1,"week":2},{"mmdd":"01-10","rain_mean_all":0.94,"rain_mean_wet":4.7,"rain_freq":0.2,"snowfall_cm":0.5419999999999999,"month":1,"week":2},{"mmdd":"01-11","rain_mean_all":2.4571428571428573,"rain_mean_wet":9.555555555555554,"rain_freq":0.2571428571428571,"snowfall_cm":0.7420000000000001,"month":1,"week":2},{"mmdd":"01-12","rain_mean_all":2.0942857142857143,"rain_mean_wet":7.330000000000001,"rain_freq":0.2857142857142857,"snowfall_cm":0.78,"month":1,"week":2},{"mmdd":"01-13","rain_mean_all":1.3171428571428572,"rain_mean_wet":3.0733333333333333,"rain_freq":0.42857142857142855,"snowfall_cm":1.012,"month":1,"week":2},{"mmdd":"01-14","rain_mean_all":0.9771428571428572,"rain_mean_wet":4.885714285714286,"rain_freq":0.2,"snowfall_cm":0.6160000000000001,"month":1,"week":2},{"mmdd":"01-15","rain_mean_all":1.0142857142857142,"rain_mean_wet":5.916666666666665,"rain_freq":0.17142857142857143,"snowfall_cm":0.874,"month":1,"week":3},{"mmdd":"01-16","rain_mean_all":0.7714285714285715,"rain_mean_wet":3.857142857142857,"rain_freq":0.2,"snowfall_cm":0.34,"month":1,"week":3},{"mmdd":"01-17","rain_mean_all":0.9857142857142858,"rain_mean_wet":5.75,"rain_freq":0.17142857142857143,"snowfall_cm":1.1640000000000001,"month":1,"week":3},{"mmdd":"01-18","rain_mean_all":0.9771428571428572,"rain_mean_wet":3.8000000000000003,"rain_freq":0.2571428571428571,"snowfall_cm":0.7140000000000001,"month":1,"week":3},{"mmdd":"01-19","rain_mean_all":0.8257142857142857,"rain_mean_wet":4.816666666666667,"rain_freq":0.17142857142857143,"snowfall_cm":0.5800000000000001,"month":1,"week":3},{"mmdd":"01-20","rain_mean_all":0.7771428571428572,"rain_mean_wet":5.44,"rain_freq":0.14285714285714285,"snowfall_cm":0.35800000000000004,"month":1,"week":3},{"mmdd":"01-21","rain_mean_all":0.6142857142857143,"rain_mean_wet":5.375,"rain_freq":0.11428571428571428,"snowfall_cm":0.29000000000000004,"month":1,"week":3},{"mmdd":"01-22","rain_mean_all":0.8742857142857143,"rain_mean_wet":5.1000000000000005,"rain_freq":0.17142857142857143,"snowfall_cm":0.526,"month":1,"week":4},{"mmdd":"01-23","rain_mean_all":1.36,"rain_mean_wet":5.288888888888888,"rain_freq":0.2571428571428571,"snowfall_cm":0.6900000000000001,"month":1,"week":4},{"mmdd":"01-24","rain_mean_all":0.9,"rain_mean_wet":2.2500000000000004,"rain_freq":0.4,"snowfall_cm":0.5840000000000001,"month":1,"week":4},{"mmdd":"01-25","rain_mean_all":1.5685714285714285,"rain_mean_wet":9.15,"rain_freq":0.17142857142857143,"snowfall_cm":0.68,"month":1,"week":4},{"mmdd":"01-26","rain_mean_all":1.0228571428571427,"rain_mean_wet":5.966666666666666,"rain_freq":0.17142857142857143,"snowfall_cm":0.696,"month":1,"week":4},{"mmdd":"01-27","rain_mean_all":0.8285714285714286,"rain_mean_wet":4.142857142857143,"rain_freq":0.2,"snowfall_cm":0.99,"month":1,"week":4},{"mmdd":"01-28","rain_mean_all":0.7142857142857143,"rain_mean_wet":3.5714285714285716,"rain_freq":0.2,"snowfall_cm":1.0739999999999998,"month":1,"week":4},{"mmdd":"01-29","rain_mean_all":0.5342857142857144,"rain_mean_wet":2.0777777777777775,"rain_freq":0.2571428571428571,"snowfall_cm":0.686,"month":1,"week":5},{"mmdd":"01-30","rain_mean_all":0.7171428571428572,"rain_mean_wet":4.183333333333334,"rain_freq":0.17142857142857143,"snowfall_cm":0.4660000000000001,"month":1,"week":5},{"mmdd":"01-31","rain_mean_all":0.3142857142857143,"rain_mean_wet":2.75,"rain_freq":0.11428571428571428,"snowfall_cm":0.6699999999999999,"month":1,"week":5},{"mmdd":"02-01","rain_mean_all":0.22285714285714286,"rain_mean_wet":1.95,"rain_freq":0.11428571428571428,"snowfall_cm":0.7060000000000001,"month":2,"week":5},{"mmdd":"02-02","rain_mean_all":0.26857142857142857,"rain_mean_wet":1.342857142857143,"rain_freq":0.2,"snowfall_cm":1.1,"month":2,"week":5},{"mmdd":"02-03","rain_mean_all":0.7714285714285715,"rain_mean_wet":3.375,"rain_freq":0.22857142857142856,"snowfall_cm":0.6699999999999999,"month":2,"week":5},{"mmdd":"02-04","rain_mean_all":0.5285714285714286,"rain_mean_wet":2.6428571428571432,"rain_freq":0.2,"snowfall_cm":0.658,"month":2,"week":5},{"mmdd":"02-05","rain_mean_all":0.7057142857142857,"rain_mean_wet":4.9399999999999995,"rain_freq":0.14285714285714285,"snowfall_cm":0.59,"month":2,"week":6},{"mmdd":"02-06","rain_mean_all":0.2742857142857143,"rain_mean_wet":2.4,"rain_freq":0.11428571428571428,"snowfall_cm":0.946,"month":2,"week":6},{"mmdd":"02-07","rain_mean_all":0.31142857142857144,"rain_mean_wet":2.18,"rain_freq":0.14285714285714285,"snowfall_cm":0.79,"month":2,"week":6},{"mmdd":"02-08","rain_mean_all":0.6571428571428571,"rain_mean_wet":2.875,"rain_freq":0.22857142857142856,"snowfall_cm":0.952,"month":2,"week":6},{"mmdd":"02-09","rain_mean_all":1.0114285714285716,"rain_mean_wet":5.900000000000001,"rain_freq":0.17142857142857143,"snowfall_cm":0.69,"month":2,"week":6},{"mmdd":"02-10","rain_mean_all":0.4142857142857143,"rain_mean_wet":2.0714285714285716,"rain_freq":0.2,"snowfall_cm":0.8320000000000001,"month":2,"week":6},{"mmdd":"02-11","rain_mean_all":0.4142857142857143,"rain_mean_wet":2.4166666666666665,"rain_freq":0.17142857142857143,"snowfall_cm":0.386,"month":2,"week":6},{"mmdd":"02-12","rain_mean_all":0.8742857142857142,"rain_mean_wet":5.1000000000000005,"rain_freq":0.17142857142857143,"snowfall_cm":0.902,"month":2,"week":7},{"mmdd":"02-13","rain_mean_all":0.1514285714285714,"rain_mean_wet":0.8833333333333334,"rain_freq":0.17142857142857143,"snowfall_cm":1.016,"month":2,"week":7},{"mmdd":"02-14","rain_mean_all":0.4257142857142857,"rain_mean_wet":2.483333333333333,"rain_freq":0.17142857142857143,"snowfall_cm":0.9780000000000001,"month":2,"week":7},{"mmdd":"02-15","rain_mean_all":0.44,"rain_mean_wet":1.54,"rain_freq":0.2857142857142857,"snowfall_cm":0.646,"month":2,"week":7},{"mmdd":"02-16","rain_mean_all":0.34285714285714286,"rain_mean_wet":1.9999999999999998,"rain_freq":0.17142857142857143,"snowfall_cm":1.714,"month":2,"week":7},{"mmdd":"02-17","rain_mean_all":1.5828571428571427,"rain_mean_wet":6.925,"rain_freq":0.22857142857142856,"snowfall_cm":0.274,"month":2,"week":7},{"mmdd":"02-18","rain_mean_all":0.48000000000000004,"rain_mean_wet":1.8666666666666667,"rain_freq":0.2571428571428571,"snowfall_cm":1.4300000000000002,"month":2,"week":7},{"mmdd":"02-19","rain_mean_all":0.5742857142857143,"rain_mean_wet":1.8272727272727272,"rain_freq":0.3142857142857143,"snowfall_cm":0.38600000000000007,"month":2,"week":8},{"mmdd":"02-20","rain_mean_all":1.6714285714285715,"rain_mean_wet":5.318181818181819,"rain_freq":0.3142857142857143,"snowfall_cm":0.218,"month":2,"week":8},{"mmdd":"02-21","rain_mean_all":1.9514285714285713,"rain_mean_wet":6.829999999999998,"rain_freq":0.2857142857142857,"snowfall_cm":0.728,"month":2,"week":8},{"mmdd":"02-22","rain_mean_all":1.0142857142857142,"rain_mean_wet":4.4375,"rain_freq":0.22857142857142856,"snowfall_cm":0.9260000000000002,"month":2,"week":8},{"mmdd":"02-23","rain_mean_all":0.4571428571428571,"rain_mean_wet":1.9999999999999998,"rain_freq":0.22857142857142856,"snowfall_cm":1.24,"month":2,"week":8},{"mmdd":"02-24","rain_mean_all":0.8771428571428571,"rain_mean_wet":2.790909090909091,"rain_freq":0.3142857142857143,"snowfall_cm":0.624,"month":2,"week":8},{"mmdd":"02-25","rain_mean_all":1.1,"rain_mean_wet":4.8125,"rain_freq":0.22857142857142856,"snowfall_cm":0.78,"month":2,"week":8},{"mmdd":"02-26","rain_mean_all":0.18857142857142856,"rain_mean_wet":1.65,"rain_freq":0.11428571428571428,"snowfall_cm":0.686,"month":2,"week":9},{"mmdd":"02-27","rain_mean_all":1.4542857142857142,"rain_mean_wet":4.241666666666666,"rain_freq":0.34285714285714286,"snowfall_cm":1.5699999999999998,"month":2,"week":9},{"mmdd":"02-28","rain_mean_all":1.2742857142857142,"rain_mean_wet":3.716666666666667,"rain_freq":0.34285714285714286,"snowfall_cm":0.4640000000000001,"month":2,"week":9},{"mmdd":"03-01","rain_mean_all":1.1142857142857145,"rain_mean_wet":3.5454545454545463,"rain_freq":0.3142857142857143,"snowfall_cm":0.604,"month":3,"week":9},{"mmdd":"03-02","rain_mean_all":0.7028571428571428,"rain_mean_wet":2.7333333333333334,"rain_freq":0.2571428571428571,"snowfall_cm":0.882,"month":3,"week":9},{"mmdd":"03-03","rain_mean_all":1.0457142857142858,"rain_mean_wet":4.574999999999999,"rain_freq":0.22857142857142856,"snowfall_cm":0.554,"month":3,"week":9},{"mmdd":"03-04","rain_mean_all":0.6114285714285714,"rain_mean_wet":2.377777777777778,"rain_freq":0.2571428571428571,"snowfall_cm":0.8960000000000001,"month":3,"week":9},{"mmdd":"03-05","rain_mean_all":1.4114285714285715,"rain_mean_wet":4.9399999999999995,"rain_freq":0.2857142857142857,"snowfall_cm":1.636,"month":3,"week":10},{"mmdd":"03-06","rain_mean_all":0.7571428571428571,"rain_mean_wet":1.8928571428571428,"rain_freq":0.4,"snowfall_cm":1.008,"month":3,"week":10},{"mmdd":"03-07","rain_mean_all":1.3085714285714285,"rain_mean_wet":4.163636363636364,"rain_freq":0.3142857142857143,"snowfall_cm":0.37000000000000005,"month":3,"week":10},{"mmdd":"03-08","rain_mean_all":1.3142857142857143,"rain_mean_wet":3.8333333333333335,"rain_freq":0.34285714285714286,"snowfall_cm":0.83,"month":3,"week":10},{"mmdd":"03-09","rain_mean_all":1.44,"rain_mean_wet":4.2,"rain_freq":0.34285714285714286,"snowfall_cm":0.55,"month":3,"week":10},{"mmdd":"03-10","rain_mean_all":2.4,"rain_mean_wet":7.636363636363637,"rain_freq":0.3142857142857143,"snowfall_cm":0.53,"month":3,"week":10},{"mmdd":"03-11","rain_mean_all":1.2142857142857142,"rain_mean_wet":6.071428571428571,"rain_freq":0.2,"snowfall_cm":0.39,"month":3,"week":10},{"mmdd":"03-12","rain_mean_all":0.4742857142857143,"rain_mean_wet":2.3714285714285714,"rain_freq":0.2,"snowfall_cm":0.634,"month":3,"week":11},{"mmdd":"03-13","rain_mean_all":1.1857142857142857,"rain_mean_wet":4.15,"rain_freq":0.2857142857142857,"snowfall_cm":0.302,"month":3,"week":11},{"mmdd":"03-14","rain_mean_all":1.077142857142857,"rain_mean_wet":2.9000000000000004,"rain_freq":0.37142857142857144,"snowfall_cm":0.8360000000000001,"month":3,"week":11},{"mmdd":"03-15","rain_mean_all":0.9685714285714285,"rain_mean_wet":2.4214285714285713,"rain_freq":0.4,"snowfall_cm":0.34199999999999997,"month":3,"week":11},{"mmdd":"03-16","rain_mean_all":1.2714285714285714,"rain_mean_wet":4.944444444444445,"rain_freq":0.2571428571428571,"snowfall_cm":0.126,"month":3,"week":11},{"mmdd":"03-17","rain_mean_all":0.7228571428571429,"rain_mean_wet":3.614285714285714,"rain_freq":0.2,"snowfall_cm":0.23200000000000004,"month":3,"week":11},{"mmdd":"03-18","rain_mean_all":0.3657142857142857,"rain_mean_wet":1.422222222222222,"rain_freq":0.2571428571428571,"snowfall_cm":0.48799999999999993,"month":3,"week":11},{"mmdd":"03-19","rain_mean_all":0.6857142857142857,"rain_mean_wet":3.0000000000000004,"rain_freq":0.22857142857142856,"snowfall_cm":0.22600000000000003,"month":3,"week":12},{"mmdd":"03-20","rain_mean_all":0.8142857142857143,"rain_mean_wet":2.0357142857142856,"rain_freq":0.4,"snowfall_cm":0.692,"month":3,"week":12},{"mmdd":"03-21","rain_mean_all":1.1114285714285714,"rain_mean_wet":2.161111111111111,"rain_freq":0.5142857142857142,"snowfall_cm":0.458,"month":3,"week":12},{"mmdd":"03-22","rain_mean_all":0.31142857142857144,"rain_mean_wet":1.09,"rain_freq":0.2857142857142857,"snowfall_cm":0.462,"month":3,"week":12},{"mmdd":"03-23","rain_mean_all":1.362857142857143,"rain_mean_wet":4.336363636363636,"rain_freq":0.3142857142857143,"snowfall_cm":0.48400000000000004,"month":3,"week":12},{"mmdd":"03-24","rain_mean_all":1.6428571428571428,"rain_mean_wet":4.791666666666666,"rain_freq":0.34285714285714286,"snowfall_cm":0.28200000000000003,"month":3,"week":12},{"mmdd":"03-25","rain_mean_all":1.8857142857142857,"rain_mean_wet":4.714285714285714,"rain_freq":0.4,"snowfall_cm":0.22600000000000003,"month":3,"week":12},{"mmdd":"03-26","rain_mean_all":1.3057142857142858,"rain_mean_wet":2.538888888888889,"rain_freq":0.5142857142857142,"snowfall_cm":0.182,"month":3,"week":13},{"mmdd":"03-27","rain_mean_all":1.1885714285714286,"rain_mean_wet":3.2,"rain_freq":0.37142857142857144,"snowfall_cm":0.48000000000000004,"month":3,"week":13},{"mmdd":"03-28","rain_mean_all":1.4857142857142858,"rain_mean_wet":3.7142857142857144,"rain_freq":0.4,"snowfall_cm":0.094,"month":3,"week":13},{"mmdd":"03-29","rain_mean_all":1.925714285714286,"rain_mean_wet":3.744444444444444,"rain_freq":0.5142857142857142,"snowfall_cm":0.098,"month":3,"week":13},{"mmdd":"03-30","rain_mean_all":2.1399999999999997,"rain_mean_wet":4.993333333333334,"rain_freq":0.42857142857142855,"snowfall_cm":0.17200000000000001,"month":3,"week":13},{"mmdd":"03-31","rain_mean_all":2.1599999999999997,"rain_mean_wet":3.978947368421052,"rain_freq":0.5428571428571428,"snowfall_cm":0.448,"month":3,"week":13},{"mmdd":"04-01","rain_mean_all":2.431428571428571,"rain_mean_wet":4.478947368421053,"rain_freq":0.5428571428571428,"snowfall_cm":0.152,"month":4,"week":13},{"mmdd":"04-02","rain_mean_all":1.0828571428571427,"rain_mean_wet":2.5266666666666664,"rain_freq":0.42857142857142855,"snowfall_cm":0.476,"month":4,"week":14},{"mmdd":"04-03","rain_mean_all":3.665714285714286,"rain_mean_wet":5.578260869565218,"rain_freq":0.6571428571428571,"snowfall_cm":0.878,"month":4,"week":14},{"mmdd":"04-04","rain_mean_all":3.5942857142857143,"rain_mean_wet":7.4,"rain_freq":0.4857142857142857,"snowfall_cm":0.5860000000000001,"month":4,"week":14},{"mmdd":"04-05","rain_mean_all":0.9857142857142858,"rain_mean_wet":2.3,"rain_freq":0.42857142857142855,"snowfall_cm":0.134,"month":4,"week":14},{"mmdd":"04-06","rain_mean_all":1.302857142857143,"rain_mean_wet":2.6823529411764713,"rain_freq":0.4857142857142857,"snowfall_cm":0.53,"month":4,"week":14},{"mmdd":"04-07","rain_mean_all":1.4257142857142857,"rain_mean_wet":2.9352941176470586,"rain_freq":0.4857142857142857,"snowfall_cm":0.39599999999999996,"month":4,"week":14},{"mmdd":"04-08","rain_mean_all":2.862857142857143,"rain_mean_wet":5.894117647058824,"rain_freq":0.4857142857142857,"snowfall_cm":0.41600000000000004,"month":4,"week":14},{"mmdd":"04-09","rain_mean_all":1.7142857142857142,"rain_mean_wet":4.2857142857142865,"rain_freq":0.4,"snowfall_cm":0.022000000000000002,"month":4,"week":15},{"mmdd":"04-10","rain_mean_all":1.6228571428571428,"rain_mean_wet":5.680000000000001,"rain_freq":0.2857142857142857,"snowfall_cm":0.082,"month":4,"week":15},{"mmdd":"04-11","rain_mean_all":2.414285714285714,"rain_mean_wet":5.633333333333334,"rain_freq":0.42857142857142855,"snowfall_cm":0.43600000000000005,"month":4,"week":15},{"mmdd":"04-12","rain_mean_all":3.5942857142857143,"rain_mean_wet":5.718181818181818,"rain_freq":0.6285714285714286,"snowfall_cm":0.35,"month":4,"week":15},{"mmdd":"04-13","rain_mean_all":3.2885714285714287,"rain_mean_wet":6.394444444444444,"rain_freq":0.5142857142857142,"snowfall_cm":0.13,"month":4,"week":15},{"mmdd":"04-14","rain_mean_all":2.0428571428571427,"rain_mean_wet":4.205882352941177,"rain_freq":0.4857142857142857,"snowfall_cm":0.052000000000000005,"month":4,"week":15},{"mmdd":"04-15","rain_mean_all":2.237142857142857,"rain_mean_wet":5.219999999999999,"rain_freq":0.42857142857142855,"snowfall_cm":0.152,"month":4,"week":15},{"mmdd":"04-16","rain_mean_all":4.562857142857143,"rain_mean_wet":8.405263157894737,"rain_freq":0.5428571428571428,"snowfall_cm":0.028000000000000004,"month":4,"week":16},{"mmdd":"04-17","rain_mean_all":1.8085714285714285,"rain_mean_wet":3.3315789473684214,"rain_freq":0.5428571428571428,"snowfall_cm":0.06799999999999999,"month":4,"week":16},{"mmdd":"04-18","rain_mean_all":0.5857142857142857,"rain_mean_wet":1.7083333333333333,"rain_freq":0.34285714285714286,"snowfall_cm":0.098,"month":4,"week":16},{"mmdd":"04-19","rain_mean_all":2.0885714285714285,"rain_mean_wet":3.847368421052632,"rain_freq":0.5428571428571428,"snowfall_cm":0.05600000000000001,"month":4,"week":16},{"mmdd":"04-20","rain_mean_all":5.091428571428572,"rain_mean_wet":9.378947368421056,"rain_freq":0.5428571428571428,"snowfall_cm":0.004,"month":4,"week":16},{"mmdd":"04-21","rain_mean_all":2.26,"rain_mean_wet":3.4391304347826086,"rain_freq":0.6571428571428571,"snowfall_cm":0.13200000000000003,"month":4,"week":16},{"mmdd":"04-22","rain_mean_all":2.76,"rain_mean_wet":6.0375,"rain_freq":0.45714285714285713,"snowfall_cm":0.08800000000000001,"month":4,"week":16},{"mmdd":"04-23","rain_mean_all":2.322857142857143,"rain_mean_wet":4.78235294117647,"rain_freq":0.4857142857142857,"snowfall_cm":0.06799999999999999,"month":4,"week":17},{"mmdd":"04-24","rain_mean_all":1.9142857142857144,"rain_mean_wet":3.9411764705882346,"rain_freq":0.4857142857142857,"snowfall_cm":0.084,"month":4,"week":17},{"mmdd":"04-25","rain_mean_all":2.5342857142857143,"rain_mean_wet":4.03181818181818,"rain_freq":0.6285714285714286,"snowfall_cm":0.002,"month":4,"week":17},{"mmdd":"04-26","rain_mean_all":2.6942857142857144,"rain_mean_wet":4.963157894736843,"rain_freq":0.5428571428571428,"snowfall_cm":0.0,"month":4,"week":17},{"mmdd":"04-27","rain_mean_all":1.5742857142857143,"rain_mean_wet":2.9,"rain_freq":0.5428571428571428,"snowfall_cm":0.014000000000000002,"month":4,"week":17},{"mmdd":"04-28","rain_mean_all":2.8742857142857146,"rain_mean_wet":5.58888888888889,"rain_freq":0.5142857142857142,"snowfall_cm":0.08800000000000001,"month":4,"week":17},{"mmdd":"04-29","rain_mean_all":1.7457142857142858,"rain_mean_wet":4.7,"rain_freq":0.37142857142857144,"snowfall_cm":0.004,"month":4,"week":17},{"mmdd":"04-30","rain_mean_all":3.1857142857142855,"rain_mean_wet":5.309523809523809,"rain_freq":0.6,"snowfall_cm":0.0,"month":4,"week":18},{"mmdd":"05-01","rain_mean_all":4.34,"rain_mean_wet":6.329166666666666,"rain_freq":0.6857142857142857,"snowfall_cm":0.0,"month":5,"week":18},{"mmdd":"05-02","rain_mean_all":2.98,"rain_mean_wet":4.534782608695652,"rain_freq":0.6571428571428571,"snowfall_cm":0.0,"month":5,"week":18},{"mmdd":"05-03","rain_mean_all":3.3285714285714287,"rain_mean_wet":6.852941176470587,"rain_freq":0.4857142857142857,"snowfall_cm":0.0,"month":5,"week":18},{"mmdd":"05-04","rain_mean_all":2.031428571428571,"rain_mean_wet":3.2318181818181815,"rain_freq":0.6285714285714286,"snowfall_cm":0.0,"month":5,"week":18},{"mmdd":"05-05","rain_mean_all":2.5142857142857142,"rain_mean_wet":5.866666666666666,"rain_freq":0.42857142857142855,"snowfall_cm":0.0,"month":5,"week":18},{"mmdd":"05-06","rain_mean_all":1.5514285714285714,"rain_mean_wet":3.8785714285714286,"rain_freq":0.4,"snowfall_cm":0.0,"month":5,"week":18},{"mmdd":"05-07","rain_mean_all":1.0714285714285714,"rain_mean_wet":2.2058823529411766,"rain_freq":0.4857142857142857,"snowfall_cm":0.0,"month":5,"week":19},{"mmdd":"05-08","rain_mean_all":1.3142857142857143,"rain_mean_wet":2.875,"rain_freq":0.45714285714285713,"snowfall_cm":0.008,"month":5,"week":19},{"mmdd":"05-09","rain_mean_all":2.0885714285714285,"rain_mean_wet":4.300000000000001,"rain_freq":0.4857142857142857,"snowfall_cm":0.008,"month":5,"week":19},{"mmdd":"05-10","rain_mean_all":3.0428571428571427,"rain_mean_wet":5.605263157894737,"rain_freq":0.5428571428571428,"snowfall_cm":0.0,"month":5,"week":19},{"mmdd":"05-11","rain_mean_all":2.962857142857143,"rain_mean_wet":5.457894736842104,"rain_freq":0.5428571428571428,"snowfall_cm":0.01,"month":5,"week":19},{"mmdd":"05-12","rain_mean_all":2.111428571428571,"rain_mean_wet":3.8894736842105266,"rain_freq":0.5428571428571428,"snowfall_cm":0.0,"month":5,"week":19},{"mmdd":"05-13","rain_mean_all":1.9628571428571429,"rain_mean_wet":4.041176470588235,"rain_freq":0.4857142857142857,"snowfall_cm":0.0,"month":5,"week":19},{"mmdd":"05-14","rain_mean_all":2.6485714285714286,"rain_mean_wet":4.635,"rain_freq":0.5714285714285714,"snowfall_cm":0.0,"month":5,"week":20},{"mmdd":"05-15","rain_mean_all":3.262857142857143,"rain_mean_wet":6.010526315789474,"rain_freq":0.5428571428571428,"snowfall_cm":0.0,"month":5,"week":20},{"mmdd":"05-16","rain_mean_all":2.6542857142857144,"rain_mean_wet":5.1611111111111105,"rain_freq":0.5142857142857142,"snowfall_cm":0.0,"month":5,"week":20},{"mmdd":"05-17","rain_mean_all":2.382857142857143,"rain_mean_wet":4.633333333333334,"rain_freq":0.5142857142857142,"snowfall_cm":0.0,"month":5,"week":20},{"mmdd":"05-18","rain_mean_all":1.6885714285714286,"rain_mean_wet":4.2214285714285715,"rain_freq":0.4,"snowfall_cm":0.0,"month":5,"week":20},{"mmdd":"05-19","rain_mean_all":1.3428571428571427,"rain_mean_wet":3.133333333333333,"rain_freq":0.42857142857142855,"snowfall_cm":0.0,"month":5,"week":20},{"mmdd":"05-20","rain_mean_all":1.3885714285714286,"rain_mean_wet":3.7384615384615385,"rain_freq":0.37142857142857144,"snowfall_cm":0.0,"month":5,"week":20},{"mmdd":"05-21","rain_mean_all":2.22,"rain_mean_wet":5.179999999999999,"rain_freq":0.42857142857142855,"snowfall_cm":0.0,"month":5,"week":21},{"mmdd":"05-22","rain_mean_all":2.9714285714285715,"rain_mean_wet":5.777777777777778,"rain_freq":0.5142857142857142,"snowfall_cm":0.0,"month":5,"week":21},{"mmdd":"05-23","rain_mean_all":1.54,"rain_mean_wet":3.3687500000000004,"rain_freq":0.45714285714285713,"snowfall_cm":0.0,"month":5,"week":21},{"mmdd":"05-24","rain_mean_all":3.0171428571428573,"rain_mean_wet":5.866666666666667,"rain_freq":0.5142857142857142,"snowfall_cm":0.0,"month":5,"week":21},{"mmdd":"05-25","rain_mean_all":2.297142857142857,"rain_mean_wet":3.8285714285714283,"rain_freq":0.6,"snowfall_cm":0.0,"month":5,"week":21},{"mmdd":"05-26","rain_mean_all":2.6799999999999997,"rain_mean_wet":5.517647058823529,"rain_freq":0.4857142857142857,"snowfall_cm":0.0,"month":5,"week":21},{"mmdd":"05-27","rain_mean_all":2.5885714285714285,"rain_mean_wet":5.329411764705882,"rain_freq":0.4857142857142857,"snowfall_cm":0.0,"month":5,"week":21},{"mmdd":"05-28","rain_mean_all":2.66,"rain_mean_wet":5.81875,"rain_freq":0.45714285714285713,"snowfall_cm":0.0,"month":5,"week":22},{"mmdd":"05-29","rain_mean_all":2.1228571428571428,"rain_mean_wet":4.127777777777776,"rain_freq":0.5142857142857142,"snowfall_cm":0.0,"month":5,"week":22},{"mmdd":"05-30","rain_mean_all":1.3199999999999998,"rain_mean_wet":3.553846153846154,"rain_freq":0.37142857142857144,"snowfall_cm":0.0,"month":5,"week":22},{"mmdd":"05-31","rain_mean_all":3.68,"rain_mean_wet":6.4399999999999995,"rain_freq":0.5714285714285714,"snowfall_cm":0.0,"month":5,"week":22},{"mmdd":"06-01","rain_mean_all":3.08,"rain_mean_wet":4.899999999999999,"rain_freq":0.6285714285714286,"snowfall_cm":0.0,"month":6,"week":22},{"mmdd":"06-02","rain_mean_all":2.857142857142857,"rain_mean_wet":4.761904761904761,"rain_freq":0.6,"snowfall_cm":0.0,"month":6,"week":22},{"mmdd":"06-03","rain_mean_all":2.92,"rain_mean_wet":6.387500000000001,"rain_freq":0.45714285714285713,"snowfall_cm":0.0,"month":6,"week":22},{"mmdd":"06-04","rain_mean_all":1.5885714285714285,"rain_mean_wet":4.276923076923077,"rain_freq":0.37142857142857144,"snowfall_cm":0.0,"month":6,"week":23},{"mmdd":"06-05","rain_mean_all":2.531428571428571,"rain_mean_wet":4.922222222222222,"rain_freq":0.5142857142857142,"snowfall_cm":0.0,"month":6,"week":23},{"mmdd":"06-06","rain_mean_all":2.2542857142857144,"rain_mean_wet":4.641176470588235,"rain_freq":0.4857142857142857,"snowfall_cm":0.0,"month":6,"week":23},{"mmdd":"06-07","rain_mean_all":2.2342857142857144,"rain_mean_wet":3.91,"rain_freq":0.5714285714285714,"snowfall_cm":0.0,"month":6,"week":23},{"mmdd":"06-08","rain_mean_all":2.1457142857142855,"rain_mean_wet":4.417647058823529,"rain_freq":0.4857142857142857,"snowfall_cm":0.0,"month":6,"week":23},{"mmdd":"06-09","rain_mean_all":2.5457142857142854,"rain_mean_wet":4.242857142857143,"rain_freq":0.6,"snowfall_cm":0.0,"month":6,"week":23},{"mmdd":"06-10","rain_mean_all":1.7228571428571429,"rain_mean_wet":4.307142857142857,"rain_freq":0.4,"snowfall_cm":0.0,"month":6,"week":23},{"mmdd":"06-11","rain_mean_all":3.2,"rain_mean_wet":7.000000000000001,"rain_freq":0.45714285714285713,"snowfall_cm":0.0,"month":6,"week":24},{"mmdd":"06-12","rain_mean_all":4.174285714285714,"rain_mean_wet":9.13125,"rain_freq":0.45714285714285713,"snowfall_cm":0.0,"month":6,"week":24},{"mmdd":"06-13","rain_mean_all":2.317142857142857,"rain_mean_wet":4.055000000000001,"rain_freq":0.5714285714285714,"snowfall_cm":0.0,"month":6,"week":24},{"mmdd":"06-14","rain_mean_all":2.3828571428571426,"rain_mean_wet":5.559999999999999,"rain_freq":0.42857142857142855,"snowfall_cm":0.0,"month":6,"week":24},{"mmdd":"06-15","rain_mean_all":1.1,"rain_mean_wet":2.961538461538461,"rain_freq":0.37142857142857144,"snowfall_cm":0.0,"month":6,"week":24},{"mmdd":"06-16","rain_mean_all":2.4542857142857146,"rain_mean_wet":4.772222222222222,"rain_freq":0.5142857142857142,"snowfall_cm":0.0,"month":6,"week":24},{"mmdd":"06-17","rain_mean_all":0.962857142857143,"rain_mean_wet":1.8722222222222225,"rain_freq":0.5142857142857142,"snowfall_cm":0.0,"month":6,"week":24},{"mmdd":"06-18","rain_mean_all":2.1657142857142855,"rain_mean_wet":3.79,"rain_freq":0.5714285714285714,"snowfall_cm":0.0,"month":6,"week":25},{"mmdd":"06-19","rain_mean_all":2.58,"rain_mean_wet":4.752631578947368,"rain_freq":0.5428571428571428,"snowfall_cm":0.0,"month":6,"week":25},{"mmdd":"06-20","rain_mean_all":3.3057142857142856,"rain_mean_wet":8.9,"rain_freq":0.37142857142857144,"snowfall_cm":0.0,"month":6,"week":25},{"mmdd":"06-21","rain_mean_all":2.325714285714286,"rain_mean_wet":3.6999999999999997,"rain_freq":0.6285714285714286,"snowfall_cm":0.0,"month":6,"week":25},{"mmdd":"06-22","rain_mean_all":4.034285714285714,"rain_mean_wet":7.0600000000000005,"rain_freq":0.5714285714285714,"snowfall_cm":0.0,"month":6,"week":25},{"mmdd":"06-23","rain_mean_all":2.662857142857143,"rain_mean_wet":6.6571428571428575,"rain_freq":0.4,"snowfall_cm":0.0,"month":6,"week":25},{"mmdd":"06-24","rain_mean_all":3.891428571428571,"rain_mean_wet":7.566666666666666,"rain_freq":0.5142857142857142,"snowfall_cm":0.0,"month":6,"week":25},{"mmdd":"06-25","rain_mean_all":3.3400000000000003,"rain_mean_wet":5.5666666666666655,"rain_freq":0.6,"snowfall_cm":0.0,"month":6,"week":26},{"mmdd":"06-26","rain_mean_all":3.3885714285714283,"rain_mean_wet":6.976470588235294,"rain_freq":0.4857142857142857,"snowfall_cm":0.0,"month":6,"week":26},{"mmdd":"06-27","rain_mean_all":3.782857142857143,"rain_mean_wet":6.0181818181818185,"rain_freq":0.6285714285714286,"snowfall_cm":0.0,"month":6,"week":26},{"mmdd":"06-28","rain_mean_all":3.4657142857142857,"rain_mean_wet":5.776190476190476,"rain_freq":0.6,"snowfall_cm":0.0,"month":6,"week":26},{"mmdd":"06-29","rain_mean_all":4.62,"rain_mean_wet":7.699999999999999,"rain_freq":0.6,"snowfall_cm":0.0,"month":6,"week":26},{"mmdd":"06-30","rain_mean_all":0.9571428571428572,"rain_mean_wet":1.675,"rain_freq":0.5714285714285714,"snowfall_cm":0.0,"month":6,"week":26},{"mmdd":"07-01","rain_mean_all":0.9314285714285715,"rain_mean_wet":1.9176470588235295,"rain_freq":0.4857142857142857,"snowfall_cm":0.0,"month":7,"week":26},{"mmdd":"07-02","rain_mean_all":1.2885714285714287,"rain_mean_wet":3.006666666666667,"rain_freq":0.42857142857142855,"snowfall_cm":0.0,"month":7,"week":27},{"mmdd":"07-03","rain_mean_all":1.7857142857142858,"rain_mean_wet":3.289473684210526,"rain_freq":0.5428571428571428,"snowfall_cm":0.0,"month":7,"week":27},{"mmdd":"07-04","rain_mean_all":1.3828571428571428,"rain_mean_wet":2.688888888888889,"rain_freq":0.5142857142857142,"snowfall_cm":0.0,"month":7,"week":27},{"mmdd":"07-05","rain_mean_all":2.4371428571428573,"rain_mean_wet":5.331249999999999,"rain_freq":0.45714285714285713,"snowfall_cm":0.0,"month":7,"week":27},{"mmdd":"07-06","rain_mean_all":1.5685714285714287,"rain_mean_wet":3.4312500000000004,"rain_freq":0.45714285714285713,"snowfall_cm":0.0,"month":7,"week":27},{"mmdd":"07-07","rain_mean_all":4.2,"rain_mean_wet":6.681818181818183,"rain_freq":0.6285714285714286,"snowfall_cm":0.0,"month":7,"week":27},{"mmdd":"07-08","rain_mean_all":2.317142857142857,"rain_mean_wet":3.686363636363636,"rain_freq":0.6285714285714286,"snowfall_cm":0.0,"month":7,"week":27},{"mmdd":"07-09","rain_mean_all":2.331428571428572,"rain_mean_wet":3.5478260869565217,"rain_freq":0.6571428571428571,"snowfall_cm":0.0,"month":7,"week":28},{"mmdd":"07-10","rain_mean_all":1.4114285714285715,"rain_mean_wet":3.0875000000000004,"rain_freq":0.45714285714285713,"snowfall_cm":0.0,"month":7,"week":28},{"mmdd":"07-11","rain_mean_all":2.137142857142857,"rain_mean_wet":5.342857142857143,"rain_freq":0.4,"snowfall_cm":0.0,"month":7,"week":28},{"mmdd":"07-12","rain_mean_all":1.4657142857142855,"rain_mean_wet":3.4200000000000004,"rain_freq":0.42857142857142855,"snowfall_cm":0.0,"month":7,"week":28},{"mmdd":"07-13","rain_mean_all":2.337142857142857,"rain_mean_wet":4.3052631578947365,"rain_freq":0.5428571428571428,"snowfall_cm":0.0,"month":7,"week":28},{"mmdd":"07-14","rain_mean_all":3.551428571428571,"rain_mean_wet":6.542105263157895,"rain_freq":0.5428571428571428,"snowfall_cm":0.0,"month":7,"week":28},{"mmdd":"07-15","rain_mean_all":2.331428571428572,"rain_mean_wet":4.08,"rain_freq":0.5714285714285714,"snowfall_cm":0.0,"month":7,"week":28},{"mmdd":"07-16","rain_mean_all":2.908571428571429,"rain_mean_wet":5.09,"rain_freq":0.5714285714285714,"snowfall_cm":0.0,"month":7,"week":29},{"mmdd":"07-17","rain_mean_all":4.48,"rain_mean_wet":5.807407407407408,"rain_freq":0.7714285714285715,"snowfall_cm":0.0,"month":7,"week":29},{"mmdd":"07-18","rain_mean_all":2.362857142857143,"rain_mean_wet":3.9380952380952374,"rain_freq":0.6,"snowfall_cm":0.0,"month":7,"week":29},{"mmdd":"07-19","rain_mean_all":2.3971428571428572,"rain_mean_wet":4.195,"rain_freq":0.5714285714285714,"snowfall_cm":0.0,"month":7,"week":29},{"mmdd":"07-20","rain_mean_all":3.337142857142857,"rain_mean_wet":6.488888888888889,"rain_freq":0.5142857142857142,"snowfall_cm":0.0,"month":7,"week":29},{"mmdd":"07-21","rain_mean_all":1.4342857142857142,"rain_mean_wet":2.3904761904761904,"rain_freq":0.6,"snowfall_cm":0.0,"month":7,"week":29},{"mmdd":"07-22","rain_mean_all":1.8228571428571427,"rain_mean_wet":3.9875000000000003,"rain_freq":0.45714285714285713,"snowfall_cm":0.0,"month":7,"week":29},{"mmdd":"07-23","rain_mean_all":3.68,"rain_mean_wet":5.854545454545454,"rain_freq":0.6285714285714286,"snowfall_cm":0.0,"month":7,"week":30},{"mmdd":"07-24","rain_mean_all":1.5885714285714285,"rain_mean_wet":2.9263157894736844,"rain_freq":0.5428571428571428,"snowfall_cm":0.0,"month":7,"week":30},{"mmdd":"07-25","rain_mean_all":1.6114285714285714,"rain_mean_wet":3.1333333333333333,"rain_freq":0.5142857142857142,"snowfall_cm":0.0,"month":7,"week":30},{"mmdd":"07-26","rain_mean_all":2.7028571428571433,"rain_mean_wet":5.564705882352942,"rain_freq":0.4857142857142857,"snowfall_cm":0.0,"month":7,"week":30},{"mmdd":"07-27","rain_mean_all":2.5428571428571427,"rain_mean_wet":4.045454545454546,"rain_freq":0.6285714285714286,"snowfall_cm":0.0,"month":7,"week":30},{"mmdd":"07-28","rain_mean_all":2.394285714285714,"rain_mean_wet":4.655555555555556,"rain_freq":0.5142857142857142,"snowfall_cm":0.0,"month":7,"week":30},{"mmdd":"07-29","rain_mean_all":2.537142857142857,"rain_mean_wet":4.4399999999999995,"rain_freq":0.5714285714285714,"snowfall_cm":0.0,"month":7,"week":30},{"mmdd":"07-30","rain_mean_all":2.6114285714285717,"rain_mean_wet":4.569999999999999,"rain_freq":0.5714285714285714,"snowfall_cm":0.0,"month":7,"week":31},{"mmdd":"07-31","rain_mean_all":3.577142857142857,"rain_mean_wet":8.346666666666668,"rain_freq":0.42857142857142855,"snowfall_cm":0.0,"month":7,"week":31},{"mmdd":"08-01","rain_mean_all":2.1285714285714286,"rain_mean_wet":3.9210526315789473,"rain_freq":0.5428571428571428,"snowfall_cm":0.0,"month":8,"week":31},{"mmdd":"08-02","rain_mean_all":1.7142857142857142,"rain_mean_wet":2.608695652173913,"rain_freq":0.6571428571428571,"snowfall_cm":0.0,"month":8,"week":31},{"mmdd":"08-03","rain_mean_all":3.1257142857142854,"rain_mean_wet":5.209523809523809,"rain_freq":0.6,"snowfall_cm":0.0,"month":8,"week":31},{"mmdd":"08-04","rain_mean_all":3.0485714285714285,"rain_mean_wet":5.080952380952381,"rain_freq":0.6,"snowfall_cm":0.0,"month":8,"week":31},{"mmdd":"08-05","rain_mean_all":1.2342857142857144,"rain_mean_wet":2.8800000000000012,"rain_freq":0.42857142857142855,"snowfall_cm":0.0,"month":8,"week":31},{"mmdd":"08-06","rain_mean_all":2.2457142857142856,"rain_mean_wet":5.239999999999999,"rain_freq":0.42857142857142855,"snowfall_cm":0.0,"month":8,"week":32},{"mmdd":"08-07","rain_mean_all":1.9142857142857144,"rain_mean_wet":3.526315789473684,"rain_freq":0.5428571428571428,"snowfall_cm":0.0,"month":8,"week":32},{"mmdd":"08-08","rain_mean_all":2.3342857142857145,"rain_mean_wet":4.3,"rain_freq":0.5428571428571428,"snowfall_cm":0.0,"month":8,"week":32},{"mmdd":"08-09","rain_mean_all":2.645714285714286,"rain_mean_wet":4.873684210526315,"rain_freq":0.5428571428571428,"snowfall_cm":0.0,"month":8,"week":32},{"mmdd":"08-10","rain_mean_all":3.7314285714285713,"rain_mean_wet":5.224000000000001,"rain_freq":0.7142857142857143,"snowfall_cm":0.0,"month":8,"week":32},{"mmdd":"08-11","rain_mean_all":2.56,"rain_mean_wet":4.4799999999999995,"rain_freq":0.5714285714285714,"snowfall_cm":0.0,"month":8,"week":32},{"mmdd":"08-12","rain_mean_all":2.1314285714285712,"rain_mean_wet":4.388235294117647,"rain_freq":0.4857142857142857,"snowfall_cm":0.0,"month":8,"week":32},{"mmdd":"08-13","rain_mean_all":2.16,"rain_mean_wet":4.447058823529412,"rain_freq":0.4857142857142857,"snowfall_cm":0.0,"month":8,"week":33},{"mmdd":"08-14","rain_mean_all":0.9571428571428572,"rain_mean_wet":1.8611111111111107,"rain_freq":0.5142857142857142,"snowfall_cm":0.0,"month":8,"week":33},{"mmdd":"08-15","rain_mean_all":1.9314285714285713,"rain_mean_wet":2.9391304347826086,"rain_freq":0.6571428571428571,"snowfall_cm":0.0,"month":8,"week":33},{"mmdd":"08-16","rain_mean_all":2.0,"rain_mean_wet":4.117647058823529,"rain_freq":0.4857142857142857,"snowfall_cm":0.0,"month":8,"week":33},{"mmdd":"08-17","rain_mean_all":1.9800000000000004,"rain_mean_wet":3.6473684210526316,"rain_freq":0.5428571428571428,"snowfall_cm":0.0,"month":8,"week":33},{"mmdd":"08-18","rain_mean_all":1.2914285714285716,"rain_mean_wet":2.511111111111111,"rain_freq":0.5142857142857142,"snowfall_cm":0.0,"month":8,"week":33},{"mmdd":"08-19","rain_mean_all":1.5571428571428572,"rain_mean_wet":3.0277777777777777,"rain_freq":0.5142857142857142,"snowfall_cm":0.0,"month":8,"week":33},{"mmdd":"08-20","rain_mean_all":3.8228571428571434,"rain_mean_wet":7.042105263157894,"rain_freq":0.5428571428571428,"snowfall_cm":0.0,"month":8,"week":34},{"mmdd":"08-21","rain_mean_all":2.8200000000000003,"rain_mean_wet":6.168749999999999,"rain_freq":0.45714285714285713,"snowfall_cm":0.0,"month":8,"week":34},{"mmdd":"08-22","rain_mean_all":3.38,"rain_mean_wet":6.572222222222223,"rain_freq":0.5142857142857142,"snowfall_cm":0.0,"month":8,"week":34},{"mmdd":"08-23","rain_mean_all":1.0828571428571427,"rain_mean_wet":2.36875,"rain_freq":0.45714285714285713,"snowfall_cm":0.0,"month":8,"week":34},{"mmdd":"08-24","rain_mean_all":1.0657142857142856,"rain_mean_wet":2.33125,"rain_freq":0.45714285714285713,"snowfall_cm":0.0,"month":8,"week":34},{"mmdd":"08-25","rain_mean_all":2.42,"rain_mean_wet":4.982352941176471,"rain_freq":0.4857142857142857,"snowfall_cm":0.0,"month":8,"week":34},{"mmdd":"08-26","rain_mean_all":2.02,"rain_mean_wet":3.3666666666666667,"rain_freq":0.6,"snowfall_cm":0.0,"month":8,"week":34},{"mmdd":"08-27","rain_mean_all":1.937142857142857,"rain_mean_wet":3.7666666666666666,"rain_freq":0.5142857142857142,"snowfall_cm":0.0,"month":8,"week":35},{"mmdd":"08-28","rain_mean_all":2.142857142857143,"rain_mean_wet":5.0,"rain_freq":0.42857142857142855,"snowfall_cm":0.0,"month":8,"week":35},{"mmdd":"08-29","rain_mean_all":2.0542857142857143,"rain_mean_wet":4.2294117647058815,"rain_freq":0.4857142857142857,"snowfall_cm":0.0,"month":8,"week":35},{"mmdd":"08-30","rain_mean_all":0.8771428571428572,"rain_mean_wet":1.9187500000000002,"rain_freq":0.45714285714285713,"snowfall_cm":0.0,"month":8,"week":35},{"mmdd":"08-31","rain_mean_all":1.4342857142857144,"rain_mean_wet":3.346666666666667,"rain_freq":0.42857142857142855,"snowfall_cm":0.0,"month":8,"week":35},{"mmdd":"09-01","rain_mean_all":0.5228571428571429,"rain_mean_wet":1.8300000000000005,"rain_freq":0.2857142857142857,"snowfall_cm":0.0,"month":9,"week":35},{"mmdd":"09-02","rain_mean_all":1.602857142857143,"rain_mean_wet":4.007142857142857,"rain_freq":0.4,"snowfall_cm":0.0,"month":9,"week":35},{"mmdd":"09-03","rain_mean_all":1.8971428571428572,"rain_mean_wet":3.905882352941176,"rain_freq":0.4857142857142857,"snowfall_cm":0.0,"month":9,"week":36},{"mmdd":"09-04","rain_mean_all":1.8257142857142858,"rain_mean_wet":3.363157894736842,"rain_freq":0.5428571428571428,"snowfall_cm":0.0,"month":9,"week":36},{"mmdd":"09-05","rain_mean_all":0.6171428571428572,"rain_mean_wet":1.6615384615384616,"rain_freq":0.37142857142857144,"snowfall_cm":0.0,"month":9,"week":36},{"mmdd":"09-06","rain_mean_all":1.8057142857142858,"rain_mean_wet":3.7176470588235295,"rain_freq":0.4857142857142857,"snowfall_cm":0.0,"month":9,"week":36},{"mmdd":"09-07","rain_mean_all":3.28,"rain_mean_wet":5.466666666666667,"rain_freq":0.6,"snowfall_cm":0.0,"month":9,"week":36},{"mmdd":"09-08","rain_mean_all":3.337142857142857,"rain_mean_wet":5.840000000000001,"rain_freq":0.5714285714285714,"snowfall_cm":0.0,"month":9,"week":36},{"mmdd":"09-09","rain_mean_all":2.874285714285714,"rain_mean_wet":5.588888888888889,"rain_freq":0.5142857142857142,"snowfall_cm":0.0,"month":9,"week":36},{"mmdd":"09-10","rain_mean_all":2.291428571428571,"rain_mean_wet":4.7176470588235295,"rain_freq":0.4857142857142857,"snowfall_cm":0.0,"month":9,"week":37},{"mmdd":"09-11","rain_mean_all":2.1685714285714286,"rain_mean_wet":5.421428571428572,"rain_freq":0.4,"snowfall_cm":0.0,"month":9,"week":37},{"mmdd":"09-12","rain_mean_all":2.3085714285714283,"rain_mean_wet":5.386666666666666,"rain_freq":0.42857142857142855,"snowfall_cm":0.0,"month":9,"week":37},{"mmdd":"09-13","rain_mean_all":2.8514285714285714,"rain_mean_wet":5.544444444444445,"rain_freq":0.5142857142857142,"snowfall_cm":0.0,"month":9,"week":37},{"mmdd":"09-14","rain_mean_all":2.7257142857142855,"rain_mean_wet":5.611764705882353,"rain_freq":0.4857142857142857,"snowfall_cm":0.0,"month":9,"week":37},{"mmdd":"09-15","rain_mean_all":2.3771428571428572,"rain_mean_wet":3.7818181818181813,"rain_freq":0.6285714285714286,"snowfall_cm":0.0,"month":9,"week":37},{"mmdd":"09-16","rain_mean_all":1.9114285714285713,"rain_mean_wet":5.574999999999999,"rain_freq":0.34285714285714286,"snowfall_cm":0.0,"month":9,"week":37},{"mmdd":"09-17","rain_mean_all":0.9028571428571429,"rain_mean_wet":2.872727272727273,"rain_freq":0.3142857142857143,"snowfall_cm":0.0,"month":9,"week":38},{"mmdd":"09-18","rain_mean_all":0.8428571428571429,"rain_mean_wet":2.95,"rain_freq":0.2857142857142857,"snowfall_cm":0.0,"month":9,"week":38},{"mmdd":"09-19","rain_mean_all":1.8457142857142856,"rain_mean_wet":6.459999999999999,"rain_freq":0.2857142857142857,"snowfall_cm":0.0,"month":9,"week":38},{"mmdd":"09-20","rain_mean_all":1.3857142857142857,"rain_mean_wet":3.233333333333334,"rain_freq":0.42857142857142855,"snowfall_cm":0.0,"month":9,"week":38},{"mmdd":"09-21","rain_mean_all":3.2057142857142855,"rain_mean_wet":7.48,"rain_freq":0.42857142857142855,"snowfall_cm":0.0,"month":9,"week":38},{"mmdd":"09-22","rain_mean_all":3.9285714285714284,"rain_mean_wet":6.875,"rain_freq":0.5714285714285714,"snowfall_cm":0.0,"month":9,"week":38},{"mmdd":"09-23","rain_mean_all":4.48,"rain_mean_wet":8.71111111111111,"rain_freq":0.5142857142857142,"snowfall_cm":0.0,"month":9,"week":38},{"mmdd":"09-24","rain_mean_all":1.0971428571428572,"rain_mean_wet":2.953846153846153,"rain_freq":0.37142857142857144,"snowfall_cm":0.0,"month":9,"week":39},{"mmdd":"09-25","rain_mean_all":2.5914285714285716,"rain_mean_wet":6.976923076923077,"rain_freq":0.37142857142857144,"snowfall_cm":0.0,"month":9,"week":39},{"mmdd":"09-26","rain_mean_all":2.582857142857143,"rain_mean_wet":6.026666666666667,"rain_freq":0.42857142857142855,"snowfall_cm":0.0,"month":9,"week":39},{"mmdd":"09-27","rain_mean_all":3.217142857142857,"rain_mean_wet":6.623529411764706,"rain_freq":0.4857142857142857,"snowfall_cm":0.0,"month":9,"week":39},{"mmdd":"09-28","rain_mean_all":3.1714285714285713,"rain_mean_wet":7.928571428571429,"rain_freq":0.4,"snowfall_cm":0.0,"month":9,"week":39},{"mmdd":"09-29","rain_mean_all":2.1971428571428575,"rain_mean_wet":4.272222222222222,"rain_freq":0.5142857142857142,"snowfall_cm":0.0,"month":9,"week":39},{"mmdd":"09-30","rain_mean_all":2.4085714285714284,"rain_mean_wet":4.215,"rain_freq":0.5714285714285714,"snowfall_cm":0.0,"month":9,"week":39},{"mmdd":"10-01","rain_mean_all":2.065714285714286,"rain_mean_wet":4.819999999999999,"rain_freq":0.42857142857142855,"snowfall_cm":0.0,"month":10,"week":40},{"mmdd":"10-02","rain_mean_all":3.2457142857142856,"rain_mean_wet":5.68,"rain_freq":0.5714285714285714,"snowfall_cm":0.0,"month":10,"week":40},{"mmdd":"10-03","rain_mean_all":2.2342857142857144,"rain_mean_wet":3.9099999999999993,"rain_freq":0.5714285714285714,"snowfall_cm":0.0,"month":10,"week":40},{"mmdd":"10-04","rain_mean_all":2.705714285714286,"rain_mean_wet":4.98421052631579,"rain_freq":0.5428571428571428,"snowfall_cm":0.0,"month":10,"week":40},{"mmdd":"10-05","rain_mean_all":2.0,"rain_mean_wet":3.684210526315789,"rain_freq":0.5428571428571428,"snowfall_cm":0.0,"month":10,"week":40},{"mmdd":"10-06","rain_mean_all":5.071428571428571,"rain_mean_wet":8.875,"rain_freq":0.5714285714285714,"snowfall_cm":0.0,"month":10,"week":40},{"mmdd":"10-07","rain_mean_all":2.717142857142857,"rain_mean_wet":4.754999999999999,"rain_freq":0.5714285714285714,"snowfall_cm":0.0,"month":10,"week":40},{"mmdd":"10-08","rain_mean_all":1.2971428571428572,"rain_mean_wet":3.783333333333333,"rain_freq":0.34285714285714286,"snowfall_cm":0.0,"month":10,"week":41},{"mmdd":"10-09","rain_mean_all":2.5,"rain_mean_wet":4.861111111111111,"rain_freq":0.5142857142857142,"snowfall_cm":0.0,"month":10,"week":41},{"mmdd":"10-10","rain_mean_all":0.9114285714285714,"rain_mean_wet":3.1900000000000004,"rain_freq":0.2857142857142857,"snowfall_cm":0.0,"month":10,"week":41},{"mmdd":"10-11","rain_mean_all":1.4028571428571428,"rain_mean_wet":4.463636363636365,"rain_freq":0.3142857142857143,"snowfall_cm":0.0,"month":10,"week":41},{"mmdd":"10-12","rain_mean_all":1.2685714285714285,"rain_mean_wet":3.1714285714285717,"rain_freq":0.4,"snowfall_cm":0.0,"month":10,"week":41},{"mmdd":"10-13","rain_mean_all":2.5285714285714285,"rain_mean_wet":4.214285714285714,"rain_freq":0.6,"snowfall_cm":0.0,"month":10,"week":41},{"mmdd":"10-14","rain_mean_all":3.1142857142857143,"rain_mean_wet":5.7368421052631575,"rain_freq":0.5428571428571428,"snowfall_cm":0.0,"month":10,"week":41},{"mmdd":"10-15","rain_mean_all":2.8542857142857145,"rain_mean_wet":5.257894736842105,"rain_freq":0.5428571428571428,"snowfall_cm":0.0,"month":10,"week":42},{"mmdd":"10-16","rain_mean_all":2.531428571428571,"rain_mean_wet":4.922222222222222,"rain_freq":0.5142857142857142,"snowfall_cm":0.0,"month":10,"week":42},{"mmdd":"10-17","rain_mean_all":2.3485714285714288,"rain_mean_wet":3.736363636363636,"rain_freq":0.6285714285714286,"snowfall_cm":0.0,"month":10,"week":42},{"mmdd":"10-18","rain_mean_all":1.3285714285714285,"rain_mean_wet":2.4473684210526314,"rain_freq":0.5428571428571428,"snowfall_cm":0.012000000000000002,"month":10,"week":42},{"mmdd":"10-19","rain_mean_all":2.8485714285714288,"rain_mean_wet":5.24736842105263,"rain_freq":0.5428571428571428,"snowfall_cm":0.0,"month":10,"week":42},{"mmdd":"10-20","rain_mean_all":2.9885714285714284,"rain_mean_wet":4.754545454545455,"rain_freq":0.6285714285714286,"snowfall_cm":0.004,"month":10,"week":42},{"mmdd":"10-21","rain_mean_all":3.0171428571428573,"rain_mean_wet":5.279999999999999,"rain_freq":0.5714285714285714,"snowfall_cm":0.008,"month":10,"week":42},{"mmdd":"10-22","rain_mean_all":1.6114285714285714,"rain_mean_wet":3.1333333333333333,"rain_freq":0.5142857142857142,"snowfall_cm":0.0,"month":10,"week":43},{"mmdd":"10-23","rain_mean_all":2.4114285714285715,"rain_mean_wet":4.220000000000001,"rain_freq":0.5714285714285714,"snowfall_cm":0.006000000000000001,"month":10,"week":43},{"mmdd":"10-24","rain_mean_all":1.5171428571428571,"rain_mean_wet":3.1235294117647054,"rain_freq":0.4857142857142857,"snowfall_cm":0.0,"month":10,"week":43},{"mmdd":"10-25","rain_mean_all":2.257142857142857,"rain_mean_wet":4.9375,"rain_freq":0.45714285714285713,"snowfall_cm":0.0,"month":10,"week":43},{"mmdd":"10-26","rain_mean_all":2.414285714285714,"rain_mean_wet":4.225,"rain_freq":0.5714285714285714,"snowfall_cm":0.008,"month":10,"week":43},{"mmdd":"10-27","rain_mean_all":3.791428571428571,"rain_mean_wet":6.031818181818181,"rain_freq":0.6285714285714286,"snowfall_cm":0.054000000000000006,"month":10,"week":43},{"mmdd":"10-28","rain_mean_all":2.774285714285714,"rain_mean_wet":7.469230769230768,"rain_freq":0.37142857142857144,"snowfall_cm":0.024000000000000004,"month":10,"week":43},{"mmdd":"10-29","rain_mean_all":1.6971428571428573,"rain_mean_wet":3.3000000000000003,"rain_freq":0.5142857142857142,"snowfall_cm":0.0,"month":10,"week":44},{"mmdd":"10-30","rain_mean_all":2.8714285714285714,"rain_mean_wet":8.375,"rain_freq":0.34285714285714286,"snowfall_cm":0.0,"month":10,"week":44},{"mmdd":"10-31","rain_mean_all":3.125714285714286,"rain_mean_wet":6.077777777777778,"rain_freq":0.5142857142857142,"snowfall_cm":0.01,"month":10,"week":44},{"mmdd":"11-01","rain_mean_all":2.448571428571429,"rain_mean_wet":4.761111111111111,"rain_freq":0.5142857142857142,"snowfall_cm":0.126,"month":11,"week":44},{"mmdd":"11-02","rain_mean_all":4.094285714285714,"rain_mean_wet":7.542105263157896,"rain_freq":0.5428571428571428,"snowfall_cm":0.024000000000000004,"month":11,"week":44},{"mmdd":"11-03","rain_mean_all":2.4971428571428573,"rain_mean_wet":4.855555555555556,"rain_freq":0.5142857142857142,"snowfall_cm":0.106,"month":11,"week":44},{"mmdd":"11-04","rain_mean_all":0.962857142857143,"rain_mean_wet":2.2466666666666666,"rain_freq":0.42857142857142855,"snowfall_cm":0.002,"month":11,"week":44},{"mmdd":"11-05","rain_mean_all":1.5457142857142858,"rain_mean_wet":2.847368421052632,"rain_freq":0.5428571428571428,"snowfall_cm":0.0,"month":11,"week":45},{"mmdd":"11-06","rain_mean_all":1.8914285714285715,"rain_mean_wet":4.137499999999999,"rain_freq":0.45714285714285713,"snowfall_cm":0.02,"month":11,"week":45},{"mmdd":"11-07","rain_mean_all":1.0914285714285714,"rain_mean_wet":3.472727272727273,"rain_freq":0.3142857142857143,"snowfall_cm":0.128,"month":11,"week":45},{"mmdd":"11-08","rain_mean_all":2.0742857142857147,"rain_mean_wet":4.5375000000000005,"rain_freq":0.45714285714285713,"snowfall_cm":0.032,"month":11,"week":45},{"mmdd":"11-09","rain_mean_all":1.6314285714285715,"rain_mean_wet":4.392307692307693,"rain_freq":0.37142857142857144,"snowfall_cm":0.26200000000000007,"month":11,"week":45},{"mmdd":"11-10","rain_mean_all":2.0257142857142854,"rain_mean_wet":3.7315789473684213,"rain_freq":0.5428571428571428,"snowfall_cm":0.05200000000000001,"month":11,"week":45},{"mmdd":"11-11","rain_mean_all":2.7342857142857144,"rain_mean_wet":4.784999999999999,"rain_freq":0.5714285714285714,"snowfall_cm":0.19200000000000003,"month":11,"week":45},{"mmdd":"11-12","rain_mean_all":1.5514285714285714,"rain_mean_wet":3.1941176470588237,"rain_freq":0.4857142857142857,"snowfall_cm":0.17800000000000002,"month":11,"week":46},{"mmdd":"11-13","rain_mean_all":1.542857142857143,"rain_mean_wet":3.176470588235294,"rain_freq":0.4857142857142857,"snowfall_cm":0.118,"month":11,"week":46},{"mmdd":"11-14","rain_mean_all":0.7485714285714286,"rain_mean_wet":1.7466666666666666,"rain_freq":0.42857142857142855,"snowfall_cm":0.444,"month":11,"week":46},{"mmdd":"11-15","rain_mean_all":1.8542857142857145,"rain_mean_wet":4.326666666666668,"rain_freq":0.42857142857142855,"snowfall_cm":0.396,"month":11,"week":46},{"mmdd":"11-16","rain_mean_all":2.002857142857143,"rain_mean_wet":5.392307692307692,"rain_freq":0.37142857142857144,"snowfall_cm":0.5800000000000001,"month":11,"week":46},{"mmdd":"11-17","rain_mean_all":1.4314285714285715,"rain_mean_wet":3.578571428571429,"rain_freq":0.4,"snowfall_cm":0.5419999999999999,"month":11,"week":46},{"mmdd":"11-18","rain_mean_all":1.2114285714285713,"rain_mean_wet":3.533333333333333,"rain_freq":0.34285714285714286,"snowfall_cm":0.072,"month":11,"week":46},{"mmdd":"11-19","rain_mean_all":2.037142857142857,"rain_mean_wet":4.753333333333334,"rain_freq":0.42857142857142855,"snowfall_cm":0.056,"month":11,"week":47},{"mmdd":"11-20","rain_mean_all":0.8571428571428571,"rain_mean_wet":2.5,"rain_freq":0.34285714285714286,"snowfall_cm":0.13599999999999998,"month":11,"week":47},{"mmdd":"11-21","rain_mean_all":2.157142857142857,"rain_mean_wet":5.8076923076923075,"rain_freq":0.37142857142857144,"snowfall_cm":0.05,"month":11,"week":47},{"mmdd":"11-22","rain_mean_all":1.5114285714285713,"rain_mean_wet":3.7785714285714285,"rain_freq":0.4,"snowfall_cm":0.512,"month":11,"week":47},{"mmdd":"11-23","rain_mean_all":1.1742857142857144,"rain_mean_wet":4.566666666666666,"rain_freq":0.2571428571428571,"snowfall_cm":0.28,"month":11,"week":47},{"mmdd":"11-24","rain_mean_all":1.4257142857142857,"rain_mean_wet":5.544444444444444,"rain_freq":0.2571428571428571,"snowfall_cm":0.312,"month":11,"week":47},{"mmdd":"11-25","rain_mean_all":1.48,"rain_mean_wet":3.7,"rain_freq":0.4,"snowfall_cm":0.214,"month":11,"week":47},{"mmdd":"11-26","rain_mean_all":2.3200000000000003,"rain_mean_wet":4.273684210526316,"rain_freq":0.5428571428571428,"snowfall_cm":0.20400000000000001,"month":11,"week":48},{"mmdd":"11-27","rain_mean_all":2.4171428571428573,"rain_mean_wet":4.2299999999999995,"rain_freq":0.5714285714285714,"snowfall_cm":0.16,"month":11,"week":48},{"mmdd":"11-28","rain_mean_all":2.12,"rain_mean_wet":4.364705882352941,"rain_freq":0.4857142857142857,"snowfall_cm":0.49000000000000005,"month":11,"week":48},{"mmdd":"11-29","rain_mean_all":2.3685714285714288,"rain_mean_wet":8.290000000000001,"rain_freq":0.2857142857142857,"snowfall_cm":0.39599999999999996,"month":11,"week":48},{"mmdd":"11-30","rain_mean_all":2.9800000000000004,"rain_mean_wet":5.794444444444444,"rain_freq":0.5142857142857142,"snowfall_cm":0.324,"month":11,"week":48},{"mmdd":"12-01","rain_mean_all":3.331428571428572,"rain_mean_wet":7.2875,"rain_freq":0.45714285714285713,"snowfall_cm":0.7599999999999999,"month":12,"week":48},{"mmdd":"12-02","rain_mean_all":0.7371428571428572,"rain_mean_wet":1.9846153846153844,"rain_freq":0.37142857142857144,"snowfall_cm":0.5840000000000001,"month":12,"week":48},{"mmdd":"12-03","rain_mean_all":1.8971428571428572,"rain_mean_wet":4.426666666666666,"rain_freq":0.42857142857142855,"snowfall_cm":0.29000000000000004,"month":12,"week":49},{"mmdd":"12-04","rain_mean_all":1.1771428571428573,"rain_mean_wet":2.423529411764706,"rain_freq":0.4857142857142857,"snowfall_cm":0.17800000000000002,"month":12,"week":49},{"mmdd":"12-05","rain_mean_all":1.1914285714285715,"rain_mean_wet":2.9785714285714286,"rain_freq":0.4,"snowfall_cm":0.3,"month":12,"week":49},{"mmdd":"12-06","rain_mean_all":1.2314285714285715,"rain_mean_wet":2.8733333333333335,"rain_freq":0.42857142857142855,"snowfall_cm":0.778,"month":12,"week":49},{"mmdd":"12-07","rain_mean_all":0.8685714285714285,"rain_mean_wet":3.04,"rain_freq":0.2857142857142857,"snowfall_cm":0.334,"month":12,"week":49},{"mmdd":"12-08","rain_mean_all":0.1742857142857143,"rain_mean_wet":2.0333333333333337,"rain_freq":0.08571428571428572,"snowfall_cm":0.136,"month":12,"week":49},{"mmdd":"12-09","rain_mean_all":1.1057142857142859,"rain_mean_wet":3.5181818181818185,"rain_freq":0.3142857142857143,"snowfall_cm":1.066,"month":12,"week":49},{"mmdd":"12-10","rain_mean_all":1.042857142857143,"rain_mean_wet":2.6071428571428577,"rain_freq":0.4,"snowfall_cm":0.726,"month":12,"week":50},{"mmdd":"12-11","rain_mean_all":1.2885714285714287,"rain_mean_wet":3.7583333333333333,"rain_freq":0.34285714285714286,"snowfall_cm":1.6620000000000001,"month":12,"week":50},{"mmdd":"12-12","rain_mean_all":0.7514285714285714,"rain_mean_wet":2.191666666666667,"rain_freq":0.34285714285714286,"snowfall_cm":1.034,"month":12,"week":50},{"mmdd":"12-13","rain_mean_all":0.8342857142857143,"rain_mean_wet":3.2444444444444445,"rain_freq":0.2571428571428571,"snowfall_cm":0.30600000000000005,"month":12,"week":50},{"mmdd":"12-14","rain_mean_all":0.9428571428571428,"rain_mean_wet":2.75,"rain_freq":0.34285714285714286,"snowfall_cm":1.3800000000000001,"month":12,"week":50},{"mmdd":"12-15","rain_mean_all":0.9028571428571429,"rain_mean_wet":2.4307692307692306,"rain_freq":0.37142857142857144,"snowfall_cm":0.922,"month":12,"week":50},{"mmdd":"12-16","rain_mean_all":0.9942857142857142,"rain_mean_wet":2.4857142857142853,"rain_freq":0.4,"snowfall_cm":0.94,"month":12,"week":50},{"mmdd":"12-17","rain_mean_all":2.274285714285714,"rain_mean_wet":6.633333333333333,"rain_freq":0.34285714285714286,"snowfall_cm":0.944,"month":12,"week":51},{"mmdd":"12-18","rain_mean_all":0.18285714285714286,"rain_mean_wet":0.9142857142857145,"rain_freq":0.2,"snowfall_cm":0.41600000000000004,"month":12,"week":51},{"mmdd":"12-19","rain_mean_all":0.46285714285714286,"rain_mean_wet":2.0250000000000004,"rain_freq":0.22857142857142856,"snowfall_cm":0.5200000000000001,"month":12,"week":51},{"mmdd":"12-20","rain_mean_all":0.7771428571428572,"rain_mean_wet":2.472727272727273,"rain_freq":0.3142857142857143,"snowfall_cm":0.17800000000000002,"month":12,"week":51},{"mmdd":"12-21","rain_mean_all":2.1599999999999997,"rain_mean_wet":7.5600000000000005,"rain_freq":0.2857142857142857,"snowfall_cm":0.42000000000000004,"month":12,"week":51},{"mmdd":"12-22","rain_mean_all":1.0542857142857145,"rain_mean_wet":3.3545454545454545,"rain_freq":0.3142857142857143,"snowfall_cm":0.524,"month":12,"week":51},{"mmdd":"12-23","rain_mean_all":2.4457142857142857,"rain_mean_wet":6.584615384615385,"rain_freq":0.37142857142857144,"snowfall_cm":1.004,"month":12,"week":51},{"mmdd":"12-24","rain_mean_all":1.0714285714285714,"rain_mean_wet":3.409090909090909,"rain_freq":0.3142857142857143,"snowfall_cm":0.556,"month":12,"week":52},{"mmdd":"12-25","rain_mean_all":0.88,"rain_mean_wet":3.4222222222222225,"rain_freq":0.2571428571428571,"snowfall_cm":0.822,"month":12,"week":52},{"mmdd":"12-26","rain_mean_all":0.9428571428571428,"rain_mean_wet":4.125,"rain_freq":0.22857142857142856,"snowfall_cm":0.626,"month":12,"week":52},{"mmdd":"12-27","rain_mean_all":1.217142857142857,"rain_mean_wet":4.733333333333333,"rain_freq":0.2571428571428571,"snowfall_cm":0.44399999999999995,"month":12,"week":52},{"mmdd":"12-28","rain_mean_all":0.9714285714285714,"rain_mean_wet":2.4285714285714284,"rain_freq":0.4,"snowfall_cm":0.2,"month":12,"week":52},{"mmdd":"12-29","rain_mean_all":2.7285714285714286,"rain_mean_wet":6.366666666666665,"rain_freq":0.42857142857142855,"snowfall_cm":0.7060000000000001,"month":12,"week":52},{"mmdd":"12-30","rain_mean_all":1.362857142857143,"rain_mean_wet":3.975,"rain_freq":0.34285714285714286,"snowfall_cm":0.334,"month":12,"week":52},{"mmdd":"12-31","rain_mean_all":1.6742857142857144,"rain_mean_wet":3.9066666666666667,"rain_freq":0.42857142857142855,"snowfall_cm":0.57,"month":12,"week":1}];
+
+const MONTH_NAMES = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const RAIN_COLOR = "#B6E5E8";
+const SNOW_COLOR = "#76659E";
+const BG = "#FFFFFF";
+
+// Pre-compute weekly averages (52 weeks, week 53 merged into 52)
+const WEEKLY_DATA = (function() {
+  const map = {};
+  DATA.forEach(d => {
+    const w = d.week > 52 ? 52 : d.week;
+    if (!map[w]) map[w] = [];
+    map[w].push(d);
+  });
+  return Array.from({length: 52}, (_, i) => {
+    const w = i + 1;
+    const days = map[w] || [];
+    const sum = key => days.reduce((s, d) => s + d[key], 0);
+    const avg = key => sum(key) / days.length;
+    return {
+      week: w,
+      rain_mean_all: sum("rain_mean_all"),
+      rain_mean_wet: sum("rain_mean_wet"),
+      rain_freq:     avg("rain_freq"),   // frequency stays as avg (probability)
+      snowfall_cm:   sum("snowfall_cm"),
+    };
+  });
+})();
+
+let state = {
+  metric: "rain_mean_all",
+  labelBy: "week",
+  rainIndicator: "top",
+  snowIndicator: "top",
+  indicatorSize: 2.3,
+  lineWidth: 0.8,
+  centreR: 80,
+  snowDepth: 20,
+  gap: 4,
+  rainDepth: 31,
+  barWFrac: 0.20,
+};
+
+function draw() {
+  const svg = d3.select("#chart");
+  svg.selectAll("*").remove();
+
+  const W = document.getElementById("main").clientWidth;
+  const H = document.getElementById("main").clientHeight;
+  const size = Math.min(W, H) * 0.96;
+  svg.attr("width", size).attr("height", size)
+     .attr("viewBox", `0 0 ${size} ${size}`)
+     .style("background", BG);
+
+  const cx = size / 2, cy = size / 2;
+  const g = svg.append("g")
+    .attr("transform", `translate(${cx},${cy})`)
+    .attr("font-family", "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif");
+
+  const isWeek = state.labelBy === "week";
+  const displayData = isWeek ? WEEKLY_DATA : DATA;
+  const N = displayData.length;
+
+  const centreR  = state.centreR;
+  const snowDepth = state.snowDepth;
+  const gap      = state.gap;
+  const rainDepth = state.rainDepth;
+  const barWFrac = state.barWFrac;
+
+  const rainVals = displayData.map(d => d[state.metric]);
+  const snowVals = displayData.map(d => d.snowfall_cm);
+  const RAIN_MAX = d3.max(rainVals);
+  const SNOW_MAX = d3.max(snowVals);
+
+  const SNOW_INNER = centreR;
+  const RAIN_INNER = centreR + snowDepth + gap;
+  const barW = (2 * Math.PI / N) * barWFrac;
+
+  const outerR = RAIN_INNER + rainDepth + 18;
+  const scale  = (size / 2 - 4) / (outerR + 14);
+  const px = v => v * scale;
+
+  const angle = i => (i / N) * 2 * Math.PI;
+  // bar width in px at the inner edge of each ring (gives uniform rect width)
+  const rainBarW = barW * px(RAIN_INNER);
+  const snowBarW = barW * px(SNOW_INNER + snowDepth);
+
+  // draw a rectangular bar: rotated rect anchored at the circle center
+  function rectBar(a, innerR, outerR, wPx, color) {
+    const rot = a * 180 / Math.PI;
+    g.append("rect")
+      .attr("x", -wPx / 2)
+      .attr("y", -px(outerR))
+      .attr("width", wPx)
+      .attr("height", px(outerR - innerR))
+      .attr("transform", `rotate(${rot})`)
+      .attr("fill", color)
+      .attr("opacity", 0.9);
+  }
+
+  // --- grid rings ---
+  let gridVals, gridFmt;
+  if (state.metric === "rain_freq") {
+    gridVals = [0.2,0.4,0.6,0.8]; gridFmt = v => (v*100|0) + "%";
+  } else {
+    gridVals = [1,2,3,4,5]; gridFmt = v => v + "mm";
+  }
+
+  const indFS = state.indicatorSize;
+  const rainLabelY = r => state.rainIndicator === "top" ? -r - 2 : r + px(indFS);
+  const snowLabelY = r => state.snowIndicator === "top" ? -r - 2 : r + px(indFS);
+
+  gridVals.forEach(rv => {
+    const r = px(RAIN_INNER + (rv / RAIN_MAX) * rainDepth);
+    g.append("circle").attr("r",r).attr("fill","none").attr("stroke","#00000012").attr("stroke-width",0.8);
+    g.append("text").attr("x",2).attr("y",rainLabelY(r))
+      .attr("font-size",px(indFS)).attr("fill","#00000066").text(gridFmt(rv));
+  });
+
+  // --- snow grid rings ---
+  const snowSteps = [0.5,1,2,5,10,15,20,25,30,50];
+  const snowStep = snowSteps.find(s => SNOW_MAX / s <= 4) || snowSteps[snowSteps.length-1];
+  const snowGridVals = [];
+  for (let v = snowStep; v < SNOW_MAX; v += snowStep) snowGridVals.push(Math.round(v*10)/10);
+
+  snowGridVals.forEach(sv => {
+    const r = px(SNOW_INNER + snowDepth - (sv / SNOW_MAX) * snowDepth);
+    g.append("circle").attr("r",r).attr("fill","none").attr("stroke","#76659E22").attr("stroke-width",0.8);
+    g.append("text").attr("x",2).attr("y",snowLabelY(r))
+      .attr("font-size",px(indFS)).attr("fill","#76659E88").text(sv + "cm");
+  });
+
+  // --- separator ring ---
+  g.append("circle").attr("r",px(RAIN_INNER-1))
+    .attr("fill","none").attr("stroke","#00000030")
+    .attr("stroke-width",0.8).attr("stroke-dasharray","3,3");
+
+  // --- rain bars ---
+  displayData.forEach((d, i) => {
+    const val = rainVals[i];
+    if (val <= 0) return;
+    const h = (val / RAIN_MAX) * rainDepth;
+    rectBar(angle(i), RAIN_INNER, RAIN_INNER + h, rainBarW, RAIN_COLOR);
+  });
+
+  // --- snow bars (inward) ---
+  displayData.forEach((d, i) => {
+    const val = snowVals[i];
+    if (val <= 0) return;
+    const h = (val / SNOW_MAX) * snowDepth;
+    const top = SNOW_INNER + snowDepth;
+    rectBar(angle(i), top - h, top, snowBarW, SNOW_COLOR);
+  });
+
+  // --- monthly average lines (daily/month mode only) ---
+  if (!isWeek) {
+    const mRain = {}, mSnow = {};
+    DATA.forEach(d => {
+      mRain[d.month] = (mRain[d.month] || 0) + d[state.metric];
+      mSnow[d.month] = (mSnow[d.month] || 0) + d.snowfall_cm;
+    });
+    const mRainMax = Math.max(...Object.values(mRain));
+    const mSnowMax = Math.max(...Object.values(mSnow));
+
+    function makeRoundedPath(radiusFn) {
+      const pts = DATA.map((d, i) => {
+        const r = radiusFn(d.month);
+        const a = angle(i);
+        return [Math.sin(a) * r, -Math.cos(a) * r];
+      });
+      return "M" + pts.map(p => `${p[0]},${p[1]}`).join("L") + "Z";
+    }
+
+    g.append("path")
+      .attr("d", makeRoundedPath(m => px(RAIN_INNER + (mRain[m] / mRainMax) * rainDepth)))
+      .attr("fill","none").attr("stroke","#2A7A8A")
+      .attr("stroke-width", px(state.lineWidth));
+
+    g.append("path")
+      .attr("d", makeRoundedPath(m => px(SNOW_INNER + snowDepth - (mSnow[m] / mSnowMax) * snowDepth)))
+      .attr("fill","none").attr("stroke","#3A2A6E")
+      .attr("stroke-width", px(state.lineWidth));
+  }
+
+  // --- labels & dividers ---
+  if (isWeek) {
+    // One label every 4 weeks, divider every 4 weeks
+    const labelR = RAIN_INNER + rainDepth + 10;
+    displayData.forEach((d, i) => {
+      const w = d.week;
+      if (w % 4 !== 1) return;
+      const a = angle(i);
+      g.append("line")
+        .attr("x1", Math.sin(a) * px(RAIN_INNER))
+        .attr("y1", -Math.cos(a) * px(RAIN_INNER))
+        .attr("x2", Math.sin(a) * px(RAIN_INNER + rainDepth + 2))
+        .attr("y2", -Math.cos(a) * px(RAIN_INNER + rainDepth + 2))
+        .attr("stroke","#00000025").attr("stroke-width",0.7);
+      const lx = Math.sin(a) * px(labelR);
+      const ly = -Math.cos(a) * px(labelR);
+      const deg = (a * 180 / Math.PI) % 360;
+      const rot = (deg > 90 && deg < 270) ? deg + 180 : deg;
+      g.append("text")
+        .attr("x",lx).attr("y",ly)
+        .attr("text-anchor","middle").attr("dominant-baseline","middle")
+        .attr("font-size",px(5)).attr("font-weight","700").attr("fill","#222")
+        .attr("transform",`rotate(${rot},${lx},${ly})`)
+        .text("W" + w);
+    });
+  } else {
+    // Month labels — group daily data by month
+    const monthMap = {};
+    DATA.forEach((d, i) => {
+      const m = d.month;
+      if (!monthMap[m]) monthMap[m] = [];
+      monthMap[m].push(i);
+    });
+    const labelR = RAIN_INNER + rainDepth + 10;
+    for (let m = 1; m <= 12; m++) {
+      const indices = monthMap[m];
+      if (!indices) continue;
+      const firstIdx = indices[0];
+      const midIdx   = indices[Math.floor(indices.length / 2)];
+      const a  = angle(midIdx);
+      const fa = angle(firstIdx);
+      g.append("line")
+        .attr("x1", Math.sin(fa) * px(RAIN_INNER))
+        .attr("y1", -Math.cos(fa) * px(RAIN_INNER))
+        .attr("x2", Math.sin(fa) * px(RAIN_INNER + rainDepth + 2))
+        .attr("y2", -Math.cos(fa) * px(RAIN_INNER + rainDepth + 2))
+        .attr("stroke","#00000025").attr("stroke-width",0.7);
+      const lx = Math.sin(a) * px(labelR);
+      const ly = -Math.cos(a) * px(labelR);
+      const deg = (a * 180 / Math.PI) % 360;
+      const rot = (deg > 90 && deg < 270) ? deg + 180 : deg;
+      g.append("text")
+        .attr("x",lx).attr("y",ly)
+        .attr("text-anchor","middle").attr("dominant-baseline","middle")
+        .attr("font-size",px(6)).attr("font-weight","700").attr("fill","#222")
+        .attr("transform",`rotate(${rot},${lx},${ly})`)
+        .text(MONTH_NAMES[m - 1]);
+    }
+  }
+
+  // --- centre circle ---
+  g.append("circle").attr("r",px(centreR-0.5)).attr("fill",BG).attr("stroke","#00000020").attr("stroke-width",1.2);
+  g.append("text").attr("text-anchor","middle").attr("dominant-baseline","middle")
+    .attr("font-size",px(5.5)).attr("font-weight","700").attr("fill","#222")
+    .attr("dy","-0.6em").text("Toronto");
+  g.append("text").attr("text-anchor","middle").attr("dominant-baseline","middle")
+    .attr("font-size",px(4.5)).attr("fill","#444")
+    .attr("dy","0.6em").text("1991–2025");
+
+}
+
+// --- controls ---
+document.querySelectorAll("input[name=metric]").forEach(el =>
+  el.addEventListener("change", () => { state.metric = el.value; draw(); }));
+document.querySelectorAll("input[name=label]").forEach(el =>
+  el.addEventListener("change", () => { state.labelBy = el.value; draw(); }));
+document.querySelectorAll("input[name=rain-indicator]").forEach(el =>
+  el.addEventListener("change", () => { state.rainIndicator = el.value; draw(); }));
+document.querySelectorAll("input[name=snow-indicator]").forEach(el =>
+  el.addEventListener("change", () => { state.snowIndicator = el.value; draw(); }));
+
+[
+  ["s-centre","v-centre","centreR",  v => v],
+  ["s-snow",  "v-snow",  "snowDepth",v => v],
+  ["s-gap",   "v-gap",   "gap",      v => v],
+  ["s-rain",  "v-rain",  "rainDepth",v => v],
+  ["s-barw",  "v-barw",  "barWFrac",    v => (v/100).toFixed(2)],
+  ["s-indsize","v-indsize","indicatorSize", v => (v/10).toFixed(1)],
+  ["s-lw",     "v-lw",     "lineWidth",     v => (v/10).toFixed(1)],
+].forEach(([id, vid, key, fmt]) => {
+  const el = document.getElementById(id);
+  el.addEventListener("input", () => {
+    const val = +el.value;
+    document.getElementById(vid).textContent = fmt(val);
+    state[key] = (key === "barWFrac") ? val / 100 : (key === "indicatorSize" || key === "lineWidth") ? val / 10 : val;
+    draw();
+  });
+});
+
+document.getElementById("dl-svg").addEventListener("click", () => {
+  const orig = document.getElementById("chart");
+  const w = orig.getAttribute("width");
+  const h = orig.getAttribute("height");
+  const clone = orig.cloneNode(true);
+
+  clone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+  clone.setAttribute("width", w);
+  clone.setAttribute("height", h);
+  clone.setAttribute("viewBox", `0 0 ${w} ${h}`);
+  clone.removeAttribute("style");
+
+  // embed font style so text renders correctly outside the browser
+  const style = document.createElementNS("http://www.w3.org/2000/svg", "style");
+  style.textContent = "text { font-family: system-ui, -apple-system, 'Segoe UI', Arial, sans-serif; }";
+  clone.insertBefore(style, clone.firstChild);
+
+  // white background rect
+  const bg = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+  bg.setAttribute("width", w);
+  bg.setAttribute("height", h);
+  bg.setAttribute("fill", "#ffffff");
+  clone.insertBefore(bg, style.nextSibling);
+
+  const xml = new XMLSerializer().serializeToString(clone);
+  const blob = new Blob(['<?xml version="1.0" encoding="utf-8"?>\n' + xml], {type:"image/svg+xml"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "toronto_precipitation.svg";
+  a.click();
+  URL.revokeObjectURL(a.href);
+});
+
+window.addEventListener("resize", draw);
+draw();
+</script>
+</body>
+</html>
