@@ -35,6 +35,16 @@ const LAYER_TABLE_MAP = {
 // Generic layer query
 // ---------------------------------------------------------------------------
 
+// Some layers need a computed column instead of the raw stored value — e.g.
+// parking_lots.area_m2 is always NULL (not present in the source dataset),
+// but can be derived from the lot's own polygon geometry.
+const LAYER_SQL_OVERRIDES = {
+  parking: `
+    SELECT id, estimated_spaces, ST_Area(geom::geography) AS area_m2, geom
+    FROM green_map.parking_lots
+  `,
+};
+
 /**
  * Return all features for a named layer as a GeoJSON FeatureCollection.
  *
@@ -47,12 +57,14 @@ async function getLayer(layerName) {
     throw new Error(`Unknown layer: "${layerName}". Valid layers: ${Object.keys(LAYER_TABLE_MAP).join(', ')}`);
   }
 
+  const from = LAYER_SQL_OVERRIDES[layerName] ? `(${LAYER_SQL_OVERRIDES[layerName]}) t` : `${table} t`;
+
   const sql = `
     SELECT json_build_object(
       'type',     'FeatureCollection',
       'features', COALESCE(json_agg(ST_AsGeoJSON(t.*)::json), '[]'::json)
     ) AS geojson
-    FROM ${table} t
+    FROM ${from}
   `;
 
   const result = await query(sql);
@@ -101,8 +113,11 @@ async function getParkingLots(bbox) {
       'type',     'FeatureCollection',
       'features', COALESCE(json_agg(ST_AsGeoJSON(t.*)::json), '[]'::json)
     ) AS geojson
-    FROM green_map.parking_lots t
-    WHERE geom && ST_MakeEnvelope($1, $2, $3, $4, 4326)
+    FROM (
+      SELECT id, estimated_spaces, ST_Area(geom::geography) AS area_m2, geom
+      FROM green_map.parking_lots
+      WHERE geom && ST_MakeEnvelope($1, $2, $3, $4, 4326)
+    ) t
   `;
   const result = await query(sql, [minLng, minLat, maxLng, maxLat]);
   return result.rows[0].geojson;

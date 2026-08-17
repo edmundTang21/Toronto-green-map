@@ -9,7 +9,7 @@ const V = '20260413';
 // Tree tile grid size in degrees
 const TREE_TILE_SIZE = 0.01;
 
-export function setupMapLayers(map, { setParkingStats, setViewportTreeCount }, treeState) {
+export function setupMapLayers(map, { setViewportTreeCount }, treeState) {
   // ===== SOURCES =====
   const dataSources = [
     ['boundary',    `${API_URL}/api/data/boundary?v=${V}`],
@@ -182,15 +182,6 @@ export function setupMapLayers(map, { setParkingStats, setViewportTreeCount }, t
     id: 'parking-line', source: 'parking', type: 'line',
     paint: { 'line-color': '#ef4444', 'line-width': 1.5 },
   });
-  addLayer(map, {
-    id: 'parking-labels', source: 'parking', type: 'symbol',
-    layout: {
-      'text-field': ['concat', '~', ['to-string', ['get', 'estimated_spaces']]],
-      'text-size': 11, 'text-font': ['DIN Pro Bold', 'Arial Unicode MS Bold'],
-      'text-allow-overlap': false,
-    },
-    paint: { 'text-color': '#dc2626', 'text-halo-color': '#fff', 'text-halo-width': 1.5 },
-  });
 
   // Contours
   addLayer(map, {
@@ -296,27 +287,6 @@ export function setupMapLayers(map, { setParkingStats, setViewportTreeCount }, t
 
   // ===== TREE TILE LOADING =====
   setupTreeTileLoader(map, treeState, setViewportTreeCount);
-
-  // ===== STATS =====
-  fetch(`${API_URL}/api/data/parking?v=${V}`)
-    .then(r => r.json())
-    .then(data => {
-      const lotCount = data.features.length;
-      let estSpaces = 0;
-      data.features.forEach(f => { estSpaces += f.properties.estimated_spaces || 0; });
-      setParkingStats(prev => ({ ...prev, lotCount, estSpaces: estSpaces.toLocaleString() }));
-    })
-    .catch(() => {});
-
-  fetch(`${API_URL}/api/data/greenp?v=${V}`)
-    .then(r => r.json())
-    .then(data => {
-      const greenpCount = data.features.length;
-      let greenpSpaces = 0;
-      data.features.forEach(f => { greenpSpaces += parseInt(f.properties.capacity) || 0; });
-      setParkingStats(prev => ({ ...prev, greenpCount, greenpSpaces }));
-    })
-    .catch(() => {});
 }
 
 function addLayer(map, spec) {
@@ -333,7 +303,7 @@ function setupPopups(map, treeState) {
   map.on('mouseenter', 'parking-fill', (e) => {
     const p = e.features[0].properties;
     popup.setLngLat(e.lngLat)
-      .setHTML(`<b>Lot #${p.id || '-'}</b><br>~${p.estimated_spaces || 0} spaces<br>${Math.round(p.area_m2 || 0).toLocaleString()} m&sup2;`)
+      .setHTML(`<b>Lot #${p.id || '-'}</b><br>${p.estimated_spaces != null ? `~${p.estimated_spaces} spaces` : 'spaces unknown'}<br>${Math.round(p.area_m2 || 0).toLocaleString()} m&sup2;`)
       .addTo(map);
     map.setPaintProperty('parking-fill', 'fill-opacity', ['case',
       ['==', ['get', 'id'], p.id], 0.7, 0.4]);
@@ -585,7 +555,7 @@ function setupTreeTileLoader(map, treeState, setViewportTreeCount) {
  */
 export function applyLayerVisibility(map, layers) {
   const mapping = {
-    parking:     ['parking-fill', 'parking-line', 'parking-labels'],
+    parking:     ['parking-fill', 'parking-line'],
     greenp:      ['greenp-circles', 'greenp-labels'],
     boundary:    ['boundary-line', 'boundary-fill'],
     population:  ['population-fill', 'population-line'],
