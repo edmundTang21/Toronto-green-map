@@ -23,7 +23,6 @@ export default function Map({
   mapRef,
   layers,
   currentStyle,
-  setParkingStats,
   setViewportTreeCount,
   setWalkResults,
   walkResults,
@@ -85,12 +84,12 @@ export default function Map({
     mapRef.current = map;
 
     map.on('load', () => {
-      setupMapLayers(map, { setParkingStats, setViewportTreeCount }, treeStateRef.current);
+      setupMapLayers(map, { setViewportTreeCount }, treeStateRef.current);
       applyLayerVisibility(map, layers);
     });
 
     map.on('style.load', () => {
-      setupMapLayers(map, { setParkingStats, setViewportTreeCount }, treeStateRef.current);
+      setupMapLayers(map, { setViewportTreeCount }, treeStateRef.current);
       applyLayerVisibility(map, layersRef.current);
 
       // Reapply FSI settings so color stops, range and opacity survive a basemap switch

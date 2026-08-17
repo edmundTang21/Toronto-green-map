@@ -5,7 +5,6 @@ import Footer from './components/Footer.jsx';
 import Map from './components/Map.jsx';
 import LayerControl from './components/LayerControl.jsx';
 import Legend from './components/Legend.jsx';
-import InfoPanel from './components/InfoPanel.jsx';
 import WalkPanel from './components/WalkPanel.jsx';
 import PhotoModal from './components/PhotoModal.jsx';
 import VideoModal from './components/VideoModal.jsx';
@@ -108,14 +107,6 @@ export default function App() {
   // Basemap style
   const [currentStyle, setCurrentStyle] = useState('street');
 
-  // Info panel stats
-  const [parkingStats, setParkingStats] = useState({
-    lotCount: '-',
-    estSpaces: '-',
-    greenpCount: '-',
-    greenpSpaces: '-',
-  });
-
   // Viewport tree count
   const [viewportTreeCount, setViewportTreeCount] = useState('-');
 
@@ -168,7 +159,6 @@ export default function App() {
           mapRef={mapRef}
           layers={layers}
           currentStyle={currentStyle}
-          setParkingStats={setParkingStats}
           setViewportTreeCount={setViewportTreeCount}
           fsiColorStops={fsiColorStops}
           fsiMin={fsiMin}
@@ -186,8 +176,6 @@ export default function App() {
         >
           <span style={{ color: '#228b22', fontWeight: 700 }}>{viewportTreeCount}</span> trees in view
         </div>
-
-        <InfoPanel stats={parkingStats} />
 
         <LayerControl
           layers={layers}
