@@ -40,6 +40,16 @@ const LAYER_TABLE_MAP = {
 // 325 sq ft (midpoint of the typical 300–350 sq ft/space range) = 30.19 m².
 const AVG_PARKING_SPACE_M2 = 30.19;
 
+// Some source polygons are degenerate slivers (near-collinear points forming
+// needle-thin triangles/spikes) left over from an upstream simplify/dissolve
+// step — not real lots, but they render as sharp spikes shooting off the map.
+// Filtered out by a minimum area and a perimeter²/area compactness check
+// (circle = ~12.6, square = 16; real elongated lots rarely exceed ~100).
+const PARKING_GEOM_FILTER = `
+  ST_Area(geom::geography) >= 15
+  AND (ST_Perimeter(geom::geography) ^ 2 / NULLIF(ST_Area(geom::geography), 0)) <= 150
+`;
+
 // Some layers need a computed column instead of the raw stored value — e.g.
 // parking_lots.estimated_spaces/area_m2 are always NULL (not present in the
 // source dataset), but area can be derived from the lot's own polygon
@@ -51,6 +61,7 @@ const LAYER_SQL_OVERRIDES = {
            ST_Area(geom::geography) AS area_m2,
            geom
     FROM green_map.parking_lots
+    WHERE ${PARKING_GEOM_FILTER}
   `,
 };
 
@@ -129,6 +140,7 @@ async function getParkingLots(bbox) {
              geom
       FROM green_map.parking_lots
       WHERE geom && ST_MakeEnvelope($1, $2, $3, $4, 4326)
+        AND ${PARKING_GEOM_FILTER}
     ) t
   `;
   const result = await query(sql, [minLng, minLat, maxLng, maxLat]);
