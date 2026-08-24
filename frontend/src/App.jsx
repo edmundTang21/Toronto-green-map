@@ -64,7 +64,6 @@ export default function App() {
     contours: false,
     flood: false,
     greenstreets: false,
-    greenspaces: false,
     landcover: false,
     sewer: false,
     trees: false,

@@ -212,16 +212,13 @@ export default function WalkPanel({ mapRef, onPlacePoint, onWalkTimeChange }) {
   return (
     <>
       {showResults && activeResults && (
-        <div className="panel walk-results-panel active" style={{ top: 200, right: 12, width: 300 }}>
+        <div className="panel walk-results-panel active" style={{ top: 60, right: 12, width: 300 }}>
           <h2>
             <span style={{ color: activeResults.color }}>
               Parking - {activeResults.minutes} min walk
             </span>
             <button className="close-btn" onClick={() => setShowResults(false)}>&times;</button>
           </h2>
-          <div className="walk-results-subtitle">
-            {activeResults.allDataLoaded ? 'Full Toronto data' : 'Study area only'}
-          </div>
           <div className="stat">
             <span className="stat-label">Parking Lots</span>
             <span className="stat-value">{activeResults.lotCount}</span>

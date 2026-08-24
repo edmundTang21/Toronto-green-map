@@ -6,8 +6,6 @@ const MAPBOX_TOKEN =
   import.meta.env.VITE_MAPBOX_TOKEN ||
   import.meta.env.VITE_MAPBOX_TOKEN;
 
-const API_URL = import.meta.env.VITE_API_URL || '';
-
 const STYLES = {
   street:    'mapbox://styles/mapbox/streets-v12',
   mono:      'mapbox://styles/mapbox/light-v11',
@@ -60,17 +58,8 @@ export default function Map({
   const treeStateRef = useRef({
     enabled: layers.trees,
     loadedTiles: {},
-    namesZh: {},
     loadTreeTiles: null,
   });
-
-  // Load Chinese tree names once
-  useEffect(() => {
-    fetch(`${API_URL}/api/data/trees-names-zh`)
-      .then(r => r.json())
-      .then(d => { treeStateRef.current.namesZh = d; })
-      .catch(() => {});
-  }, []);
 
   // Mount map once
   useEffect(() => {

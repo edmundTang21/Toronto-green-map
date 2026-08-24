@@ -35,12 +35,21 @@ const LAYER_TABLE_MAP = {
 // Generic layer query
 // ---------------------------------------------------------------------------
 
+// Average area (m²) taken up by one parked vehicle, including drive aisle
+// share — used to estimate space counts for lots that have no capacity data.
+// 325 sq ft (midpoint of the typical 300–350 sq ft/space range) = 30.19 m².
+const AVG_PARKING_SPACE_M2 = 30.19;
+
 // Some layers need a computed column instead of the raw stored value — e.g.
-// parking_lots.area_m2 is always NULL (not present in the source dataset),
-// but can be derived from the lot's own polygon geometry.
+// parking_lots.estimated_spaces/area_m2 are always NULL (not present in the
+// source dataset), but area can be derived from the lot's own polygon
+// geometry, and spaces can then be estimated from that area.
 const LAYER_SQL_OVERRIDES = {
   parking: `
-    SELECT id, estimated_spaces, ST_Area(geom::geography) AS area_m2, geom
+    SELECT id,
+           GREATEST(ROUND(ST_Area(geom::geography) / ${AVG_PARKING_SPACE_M2}), 1) AS estimated_spaces,
+           ST_Area(geom::geography) AS area_m2,
+           geom
     FROM green_map.parking_lots
   `,
 };
@@ -114,7 +123,10 @@ async function getParkingLots(bbox) {
       'features', COALESCE(json_agg(ST_AsGeoJSON(t.*)::json), '[]'::json)
     ) AS geojson
     FROM (
-      SELECT id, estimated_spaces, ST_Area(geom::geography) AS area_m2, geom
+      SELECT id,
+             GREATEST(ROUND(ST_Area(geom::geography) / ${AVG_PARKING_SPACE_M2}), 1) AS estimated_spaces,
+             ST_Area(geom::geography) AS area_m2,
+             geom
       FROM green_map.parking_lots
       WHERE geom && ST_MakeEnvelope($1, $2, $3, $4, 4326)
     ) t

@@ -21,7 +21,6 @@ export function setupMapLayers(map, { setViewportTreeCount }, treeState) {
     ['contours',    `${API_URL}/api/data/contours?v=${V}`],
     ['flood',       `${API_URL}/api/data/flood?v=${V}`],
     ['greenstreets',`${API_URL}/api/data/greenstreets?v=${V}`],
-    ['greenspaces', `${API_URL}/api/data/greenspaces?v=${V}`],
     ['landcover',   `${API_URL}/api/data/landcover?v=${V}`],
     ['sewer',       `${API_URL}/api/data/sewer?v=${V}`],
   ];
@@ -109,18 +108,6 @@ export function setupMapLayers(map, { setViewportTreeCount }, treeState) {
   addLayer(map, {
     id: 'flood-line', source: 'flood', type: 'line',
     paint: { 'line-color': '#1e40af', 'line-width': 1 },
-    layout: { visibility: 'none' },
-  });
-
-  // Green spaces
-  addLayer(map, {
-    id: 'greenspaces-fill', source: 'greenspaces', type: 'fill',
-    paint: { 'fill-color': '#22c55e', 'fill-opacity': 0.35 },
-    layout: { visibility: 'none' },
-  });
-  addLayer(map, {
-    id: 'greenspaces-line', source: 'greenspaces', type: 'line',
-    paint: { 'line-color': '#22c55e', 'line-width': 1 },
     layout: { visibility: 'none' },
   });
 
@@ -238,7 +225,7 @@ export function setupMapLayers(map, { setViewportTreeCount }, treeState) {
   addLayer(map, {
     id: 'greenstreets-circles', source: 'greenstreets', type: 'circle',
     paint: {
-      'circle-radius': 8, 'circle-color': '#059669',
+      'circle-radius': 8, 'circle-color': '#eab308',
       'circle-stroke-color': '#fff', 'circle-stroke-width': 2,
     },
     layout: { visibility: 'none' },
@@ -283,7 +270,7 @@ export function setupMapLayers(map, { setViewportTreeCount }, treeState) {
   });
 
   // ===== POPUPS =====
-  setupPopups(map, treeState);
+  setupPopups(map);
 
   // ===== TREE TILE LOADING =====
   setupTreeTileLoader(map, treeState, setViewportTreeCount);
@@ -293,7 +280,7 @@ function addLayer(map, spec) {
   if (!map.getLayer(spec.id)) map.addLayer(spec);
 }
 
-function setupPopups(map, treeState) {
+function setupPopups(map) {
   const mapboxgl = window.mapboxgl || map._mapboxgl;
   // We import mapboxgl in Map.jsx and attach to window for popup use in this module
   const mkPopup = () => new window.__mapboxgl.Popup({ closeButton: false, closeOnClick: false });
@@ -366,20 +353,11 @@ function setupPopups(map, treeState) {
     ).addTo(map);
   });
 
-  // Green spaces hover
-  map.on('mouseenter', 'greenspaces-fill', (e) => {
-    const p = e.features[0].properties;
-    popup.setLngLat(e.lngLat).setHTML(`<b>${p.area_name || '-'}</b><br>${p.area_class || '-'}`).addTo(map);
-  });
-  map.on('mouseleave', 'greenspaces-fill', () => popup.remove());
-
   // Trees click
   map.on('click', 'trees-circles', (e) => {
     const p = e.features[0].properties;
-    const zh = (treeState.namesZh || {})[p.c] || '';
-    const zhLine = zh ? `<br><b style="color:#228b22">${zh}</b>` : '';
     new window.__mapboxgl.Popup().setLngLat(e.lngLat).setHTML(
-      `<b>${p.c}</b>${zhLine}<br><i>${p.b}</i><br>DBH: ${p.d} cm<br>${p.a}`
+      `<b>${p.c}</b><br><i>${p.b}</i><br>DBH: ${p.d} cm<br>${p.a}`
     ).addTo(map);
   });
 
@@ -565,7 +543,6 @@ export function applyLayerVisibility(map, layers) {
     contours:    ['contours-line', 'contours-labels'],
     flood:       ['flood-fill', 'flood-line'],
     greenstreets:['greenstreets-circles'],
-    greenspaces: ['greenspaces-fill', 'greenspaces-line'],
     landcover:   ['landcover-fill'],
     sewer:       ['sewer-circles'],
     trees:       ['trees-circles'],
@@ -611,7 +588,7 @@ export function setBoundaryWidth(map, width) {
 /**
  * Set contour line-color (flat hex string).
  */
-export const CONTOUR_COLOR_DEFAULT = '#b45309';
+export const CONTOUR_COLOR_DEFAULT = '#6b7280';
 
 export function setContourColor(map, color) {
   if (!map.getLayer('contours-line')) return;
