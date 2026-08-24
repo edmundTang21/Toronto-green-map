@@ -35,11 +35,11 @@ export default function Legend({
         <h3>Parking</h3>
         <div className="legend-item">
           <div className="legend-color" style={{ background: 'rgba(239,68,68,0.45)' }} />
-          <span>Parking Lot</span>
+          <span>General Parking Lots</span>
         </div>
         <div className="legend-item">
           <div className="legend-circle" style={{ background: '#16a34a', borderColor: '#fff' }} />
-          <span>Green P</span>
+          <span>City-owned Parking Lots</span>
         </div>
         <div className="legend-item">
           <div className="legend-circle" style={{ background: '#8b5cf6', borderColor: '#fff' }} />
@@ -60,11 +60,7 @@ export default function Legend({
           <span>Trees</span>
         </div>
         <div className="legend-item">
-          <div className="legend-color" style={{ background: 'rgba(34,197,94,0.4)', borderColor: '#22c55e' }} />
-          <span>Green Spaces</span>
-        </div>
-        <div className="legend-item">
-          <div className="legend-circle" style={{ background: '#059669', borderColor: '#fff' }} />
+          <div className="legend-circle" style={{ background: '#eab308', borderColor: '#fff' }} />
           <span>Green Streets</span>
         </div>
 
@@ -85,10 +81,10 @@ export default function Legend({
         <h3>Other</h3>
         <div className="legend-item">
           <div className="legend-color" style={{ background: 'rgba(59,130,246,0.15)', border: '2px solid #3b82f6' }} />
-          <span>Study Area</span>
+          <span>Study Area - Liberty Village</span>
         </div>
         <div className="legend-item">
-          <div className="legend-line" style={{ background: '#b45309' }} />
+          <div className="legend-line" style={{ background: '#6b7280' }} />
           <span>Contour</span>
         </div>
         <div className="legend-item">

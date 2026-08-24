@@ -30,25 +30,17 @@ export default function AboutModal() {
         </div>
 
         <div className="about-body">
-          <p>
-            Toronto Green Map is an interactive tool for exploring environmental and
-            urban data across the City of Toronto. It is intended for educational
-            and informational purposes only.
-          </p>
-
           <h3>Disclaimer</h3>
           <p>
             The information provided on this map is sourced from public datasets
             and is provided "as is" without warranty of any kind. Data may not
-            reflect the most current conditions. The creators of this map accept
-            no liability for decisions made based on this information.
+            reflect the most current conditions.
           </p>
 
           <h3>Data Sources</h3>
           <ul>
             <li><strong>Parking Lots</strong> — City of Toronto Open Data</li>
             <li><strong>Green P Parking</strong> — City of Toronto Open Data</li>
-            <li><strong>Green Spaces</strong> — City of Toronto Open Data</li>
             <li><strong>Green Streets</strong> — City of Toronto Open Data</li>
             <li><strong>Trees</strong> — City of Toronto Urban Forestry</li>
             <li><strong>Contours</strong> — City of Toronto Open Data</li>

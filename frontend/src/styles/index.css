@@ -196,7 +196,7 @@ footer a:hover { text-decoration: underline; }
 }
 
 .walk-results-panel {
-  top: 200px; right: 12px; width: 300px; display: none;
+  top: 60px; right: 12px; width: 300px; display: none;
 }
 .walk-results-panel.active { display: block; }
 .walk-results-panel h2 {

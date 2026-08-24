@@ -8,7 +8,7 @@ export default function Footer() {
         Toronto Open Data
       </a>{' '}
       — Parking Lots · Green P · Population · Rain Gauges · Impermeable Surface · Contours · Flood
-      Reports · Green Streets · Green Spaces · Land Cover · Sewer Inlets · Trees
+      Reports · Green Streets · Land Cover · Sewer Inlets · Trees
     </footer>
   );
 }
