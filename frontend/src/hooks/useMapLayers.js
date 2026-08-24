@@ -304,7 +304,7 @@ function setupPopups(map) {
   map.on('click', 'greenp-circles', (e) => {
     const p = e.features[0].properties;
     new window.__mapboxgl.Popup().setLngLat(e.lngLat).setHTML(
-      `<b style="color:#16a34a">Green P</b><br><b>${p.address}</b><br>
+      `<b style="color:#16a34a">City-owned Parking Lot</b><br><b>${p.address}</b><br>
        Type: ${p.carpark_type_str}<br>Capacity: ${p.capacity}<br>
        Rate: ${p.rate_half_hour ? '$' + p.rate_half_hour.trim() + '/30min' : '-'}`
     ).addTo(map);
