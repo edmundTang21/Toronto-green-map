@@ -21,7 +21,6 @@ export function setupMapLayers(map, { setViewportTreeCount }, treeState) {
     ['contours',    `${API_URL}/api/data/contours?v=${V}`],
     ['flood',       `${API_URL}/api/data/flood?v=${V}`],
     ['greenstreets',`${API_URL}/api/data/greenstreets?v=${V}`],
-    ['landcover',   `${API_URL}/api/data/landcover?v=${V}`],
     ['sewer',       `${API_URL}/api/data/sewer?v=${V}`],
   ];
 
@@ -111,19 +110,6 @@ export function setupMapLayers(map, { setViewportTreeCount }, treeState) {
     layout: { visibility: 'none' },
   });
 
-  // Land cover
-  addLayer(map, {
-    id: 'landcover-fill', source: 'landcover', type: 'fill',
-    paint: {
-      'fill-color': ['match', ['get', 'Desc'],
-        'tree', '#228b22', 'grass/shrub', '#90ee90', 'bare earth', '#d2b48c',
-        'water', '#4a90d9', 'buildings', '#888', 'roads', '#555',
-        'other paved', '#999', 'agriculture', '#daa520', '#ccc'],
-      'fill-opacity': 0.5,
-    },
-    layout: { visibility: 'none' },
-  });
-
   // Sewer inlets
   addLayer(map, {
     id: 'sewer-circles', source: 'sewer', type: 'circle',
@@ -160,14 +146,20 @@ export function setupMapLayers(map, { setViewportTreeCount }, treeState) {
     paint: { 'fill-color': '#3b82f6', 'fill-opacity': 0.06 },
   });
 
-  // Parking lots
+  // Parking lots — capped to street-level zoom; 19k+ city-wide lots are too
+  // dense to render meaningfully when zoomed out.
   addLayer(map, {
     id: 'parking-fill', source: 'parking', type: 'fill',
+    minzoom: 14,
     paint: { 'fill-color': '#ef4444', 'fill-opacity': 0.4 },
   });
   addLayer(map, {
     id: 'parking-line', source: 'parking', type: 'line',
-    paint: { 'line-color': '#ef4444', 'line-width': 1.5 },
+    minzoom: 14,
+    // Round joins/caps soften the jagged look of the simplified multipolygon
+    // outlines instead of rendering every sharp vertex angle.
+    layout: { 'line-join': 'round', 'line-cap': 'round' },
+    paint: { 'line-color': '#ef4444', 'line-width': 1.5, 'line-blur': 0.4 },
   });
 
   // Contours
@@ -361,12 +353,6 @@ function setupPopups(map) {
     ).addTo(map);
   });
 
-  // Land cover hover
-  map.on('mouseenter', 'landcover-fill', (e) => {
-    popup.setLngLat(e.lngLat).setHTML(`<b>${e.features[0].properties.description || 'Unknown'}</b>`).addTo(map);
-  });
-  map.on('mouseleave', 'landcover-fill', () => popup.remove());
-
   // Sewer inlets hover
   map.on('mouseenter', 'sewer-circles', (e) => {
     const p = e.features[0].properties;
@@ -543,7 +529,6 @@ export function applyLayerVisibility(map, layers) {
     contours:    ['contours-line', 'contours-labels'],
     flood:       ['flood-fill', 'flood-line'],
     greenstreets:['greenstreets-circles'],
-    landcover:   ['landcover-fill'],
     sewer:       ['sewer-circles'],
     trees:       ['trees-circles'],
     fsi:         ['fsi-layer'],
