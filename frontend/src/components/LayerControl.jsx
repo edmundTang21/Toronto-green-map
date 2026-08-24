@@ -27,7 +27,6 @@ const LAYER_DEFS = [
   { id: 'permeable',    label: 'Permeable',    swatchClass: '',       swatchStyle: { background: '#22c55e' },                                    section: 'Environment' },
   { id: 'trees',        label: 'Trees',        swatchClass: 'circle', swatchStyle: { background: '#228b22' },                                    section: 'Environment' },
   { id: 'greenstreets', label: 'Green Streets',swatchClass: 'circle', swatchStyle: { background: '#eab308' },                                    section: 'Environment' },
-  { id: 'landcover',    label: 'Land Cover',   swatchClass: '',       swatchStyle: { background: 'linear-gradient(135deg,#228b22,#4a90d9)' },    section: 'Environment' },
   { id: 'sewer',        label: 'Sewer Inlets',        swatchClass: 'circle', swatchStyle: { background: '#0ea5e9', borderColor: '#0369a1' },             section: 'Water & Drainage' },
   { id: 'rain',         label: 'Rain Gauges',         swatchClass: 'circle', swatchStyle: { background: '#0ea5e9' },                                    section: 'Water & Drainage' },
   { id: 'flood',        label: 'Flood Reports',       swatchClass: '',       swatchStyle: { background: 'linear-gradient(135deg,#dbeafe,#1e3a8a)' },    section: 'Water & Drainage' },
