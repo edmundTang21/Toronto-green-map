@@ -228,11 +228,11 @@ export default function WalkPanel({ mapRef, onPlacePoint, onWalkTimeChange }) {
             <span className="stat-value">~{activeResults.totalEstSpaces.toLocaleString()}</span>
           </div>
           <div className="stat">
-            <span className="stat-label">Green P</span>
+            <span className="stat-label">City-owned Lots</span>
             <span className="stat-value green">{activeResults.greenpCount}</span>
           </div>
           <div className="stat">
-            <span className="stat-label">Green P Spaces</span>
+            <span className="stat-label">City-owned Spaces</span>
             <span className="stat-value green">{activeResults.totalGreenPSpaces.toLocaleString()}</span>
           </div>
           <hr />

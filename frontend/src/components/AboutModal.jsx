@@ -40,7 +40,7 @@ export default function AboutModal() {
           <h3>Data Sources</h3>
           <ul>
             <li><strong>Parking Lots</strong> — City of Toronto Open Data</li>
-            <li><strong>Green P Parking</strong> — City of Toronto Open Data</li>
+            <li><strong>City-owned Parking Lots</strong> — City of Toronto Open Data</li>
             <li><strong>Green Streets</strong> — City of Toronto Open Data</li>
             <li><strong>Trees</strong> — City of Toronto Urban Forestry</li>
             <li><strong>Contours</strong> — City of Toronto Open Data</li>
